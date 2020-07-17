@@ -53,6 +53,7 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
+
 (defun duplicate-line()
   (interactive)
   (let ((inhibit-message 1))
@@ -112,15 +113,15 @@
       "C-d"         'mark-word-or-next-word-like-this
       "C-S-d"       'duplicate-line
       "C-S-c C-S-c" 'mc/edit-lines
-      "C-c e"       'save-and-find-build-script-and-compile
+      "<f5>"        'save-and-find-build-script-and-compile
       "M-d"         'lookup-docs-for-symbol-at-point
-      "C-#"         'comment-line)
+      "C-#"         'comment-line
+      :leader "e" 'save-and-find-build-script-and-compile)
 
 (remove-hook 'doom-first-buffer-hook #'smartparens-global-mode)
 
 (use-package! multiple-cursors)
 (use-package! ripgrep)
-
 (use-package! ivy-posframe
   :config
   (setq ivy-posframe-display-functions-alist
@@ -133,8 +134,19 @@
 
 (use-package! ox-twbs)
 
-(setq doom-font
-      (font-spec :family "Noto Sans Mono" :foundry "outline" :height 113))
-(put 'projectile-ripgrep 'disabled nil)
+(setq doom-font (font-spec :family "Noto Sans Mono" :foundry "outline" :height 113)
+      doom-modeline-major-mode-icon t)
 
-(hl-line-mode -1)
+(put 'projectile-ripgrep 'disabled nil)
+(put 'irony-additional-clang-options 'safe-local-variable #'listp)
+
+(push '("^Comint \\(finished\\).*"
+        (0 '(face nil compilation-message nil help-echo nil mouse-face nil) t)
+        (1 compilation-info-face))
+      compilation-mode-font-lock-keywords)
+
+(push '("^Comint \\(exited abnormally\\|interrupt\\|killed\\|terminated\\|segmentation fault\\)\\(?:.*with code \\([0-9]+\\)\\)?.*"
+        (0 '(face nil compilation-message nil help-echo nil mouse-face nil) t)
+        (1 compilation-error-face)
+        (2 compilation-error-face nil t))
+      compilation-mode-font-lock-keywords)
