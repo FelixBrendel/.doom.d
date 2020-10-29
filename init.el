@@ -42,9 +42,9 @@
        ;;pretty-code       ; ligatures or substitute text with pretty symbols
        ;;tabs              ; an tab bar for Emacs
        treemacs          ; a project drawer, like neotree but cooler
-       ;;unicode           ; extended unicode support for various languages
+       unicode           ; extended unicode support for various languages
        vc-gutter         ; vcs diff in the fringe
-       vi-tilde-fringe   ; fringe tildes to mark beyond EOB
+       ;;vi-tilde-fringe   ; fringe tildes to mark beyond EOB
        ;;window-select     ; visually switch windows
        workspaces        ; tab emulation, persistence & separate workspaces
        ;;zen               ; distraction-free coding or writing
@@ -67,7 +67,7 @@
        dired             ; making dired pretty [functional]
        electric          ; smarter, keyword-based electric-indent
        ibuffer           ; interactive buffer management
-       undo              ; persistent, smarter undo for your inevitable mistakes
+       ;;undo              ; persistent, smarter undo for your inevitable mistakes
        vc                ; version-control and Emacs, sitting in a tree
 
        :term
@@ -111,7 +111,7 @@
        ;;common-lisp       ; if you've seen one lisp, you've seen them all
        ;;coq               ; proofs-as-programs
        ;;crystal           ; ruby at the speed of c
-       ;;csharp            ; unity, .NET, and mono shenanigans
+       csharp            ; unity, .NET, and mono shenanigans
        ;;data              ; config/data formats
        ;;(dart +flutter)   ; paint ui and not much else
        ;;elixir            ; erlang done right
@@ -145,7 +145,7 @@
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more
        ;;purescript        ; javascript, but functional
-       ;;python            ; beautiful is better than ugly
+       python            ; beautiful is better than ugly
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
        ;;raku              ; the artist formerly known as perl6
@@ -169,7 +169,7 @@
        ;;(wanderlust +gmail)
 
        :app
-       ;;calendar
+       calendar
        ;;irc               ; how neckbeards socialize
        ;;(rss +org)        ; emacs as an RSS reader
        ;;twitter           ; twitter client https://twitter.com/vnought
