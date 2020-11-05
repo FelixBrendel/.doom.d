@@ -53,6 +53,42 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
+(setq projectile-generic-command
+ (concat "rg -0 --files --follow --color=never --hidden"
+         (if IS-WINDOWS " --path-separator /")))
+
+(setq counsel-rg-base-command '("rg" "-M" "240" "--with-filename" "--no-heading" "--line-number" "--color" "never" "%s" "--path-separator" "/" "."))
+
+(setq +doom-dashboard-menu-sections
+  '(("Reload last session"
+     :icon (all-the-icons-octicon "history" :face 'doom-dashboard-menu-title)
+     :when (cond ((require 'persp-mode nil t)
+                  (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir)))
+                 ((require 'desktop nil t)
+                  (file-exists-p (desktop-full-file-name))))
+     :face (:inherit (doom-dashboard-menu-title bold))
+     :action doom/quickload-session)
+    ("Open Calendar"
+     :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+     :when (fboundp 'org-agenda)
+     :action open-my-calendar)
+    ("Recently opened files"
+     :icon (all-the-icons-octicon "file-text" :face 'doom-dashboard-menu-title)
+     :action recentf-open-files)
+    ("Open project"
+     :icon (all-the-icons-octicon "briefcase" :face 'doom-dashboard-menu-title)
+     :action projectile-switch-project)
+    ("Jump to bookmark"
+     :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
+     :action bookmark-jump)
+    ("Open private configuration"
+     :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
+     :when (file-directory-p doom-private-dir)
+     :action doom/open-private-config)
+    ("Open documentation"
+     :icon (all-the-icons-octicon "book" :face 'doom-dashboard-menu-title)
+     :action doom/help)))
+
 
 (defun duplicate-line()
   (interactive)
@@ -108,17 +144,61 @@
     ;; else
     (mc--mark-symbol-at-point)))
 
+(defun org-in-kanban-p ()
+  (save-match-data
+    (let ((case-fold-search t)
+	        (lim-up (save-excursion (outline-previous-heading)))
+	        (lim-down (save-excursion (outline-next-heading))))
+	    (when (org-between-regexps-p
+		         "^[ \t]*#\\+begin: kanban"
+		         "^[ \t]*#\\+end"
+		         lim-up lim-down)
+	      t))))
+
+(defun org-maybe-shift-right ()
+  (interactive)
+  (if (org-in-kanban-p)
+      (org-kanban/next)
+    (org-shiftright)))
+
+(defun org-maybe-shift-left ()
+  (interactive)
+  (if (org-in-kanban-p)
+      (org-kanban/prev)
+    (org-shiftleft)))
+
+(defun open-my-calendar ()
+  (interactive)
+  (org-agenda nil "o"))
+
+(map! :map org-mode-map
+      "S-<right>" 'org-maybe-shift-right
+      "S-<left>"  'org-maybe-shift-left)
+
+;; (map! :map c-mode-map
+      ;; "C-d"         'mark-word-or-next-word-like-this)
+
+(map! :mode  prog-mode-map  "C-d"         'mark-word-or-next-word-like-this)
+(map! :after prog-mode      "C-d"         'mark-word-or-next-word-like-this)
+(map! :after c-mode        "C-d"         'mark-word-or-next-word-like-this)
+(map! :after c++-mode      "C-d"         'mark-word-or-next-word-like-this)
+
 (map! "C-s"         'swiper
+      "C-x b"       '+ivy/switch-buffer
+      "C-x 4 b"     '+ivy/switch-buffer-other-window
       "C-j"         'join-line
       "C-d"         'mark-word-or-next-word-like-this
       "C-S-d"       'duplicate-line
       "C-S-c C-S-c" 'mc/edit-lines
-      "<f5>"        'save-and-find-build-script-and-compile
-      "M-d"         'lookup-docs-for-symbol-at-point
       "C-#"         'comment-line
+      "M-d"         'lookup-docs-for-symbol-at-point
+      "<f1>"        '+doom-dashboard/open
+      "<f2>"        'open-my-calendar
+      "<f5>"        'save-and-find-build-script-and-compile
       :leader "e" 'save-and-find-build-script-and-compile)
 
 (remove-hook 'doom-first-buffer-hook #'smartparens-global-mode)
+(add-hook 'bat-mode-hook (lambda () (set (make-local-variable 'comment-start) ":: ")))
 
 (use-package! multiple-cursors)
 (use-package! ripgrep)
@@ -133,6 +213,7 @@
   (company-posframe-mode 1))
 
 (use-package! ox-twbs)
+(use-package! org-kanban)
 
 (setq doom-font (font-spec :family "Noto Sans Mono" :foundry "outline" :height 113)
       doom-modeline-major-mode-icon t)
@@ -150,3 +231,126 @@
         (1 compilation-error-face)
         (2 compilation-error-face nil t))
       compilation-mode-font-lock-keywords)
+
+
+
+(defun my-c-mode-hook ()
+  (c-set-offset 'brace-list-intro '+)
+  (c-set-offset 'brace-list-close 0))
+
+(add-hook 'c-mode-hook 'my-c-mode-hook)
+(add-hook 'c++-mode-hook 'my-c-mode-hook)
+
+(font-lock-add-keywords
+ 'c++-mode
+ '(("\\<\\(defer\\|proc\\)\\>" . font-lock-keyword-face)))
+
+
+
+(setq! calendar-week-start-day 0
+       calendar-day-name-array ["Sonntag" "Montag" "Dienstag" "Mittwoch"
+                                "Donnerstag" "Freitag" "Samstag"]
+       calendar-month-name-array ["Januar" "Februar" "März" "April" "Mai"
+                                  "Juni" "Juli" "August" "September"
+                                  "Oktober" "November" "Dezember"])
+
+
+(setq solar-n-hemi-seasons
+      '("Frühlingsanfang" "Sommeranfang" "Herbstanfang" "Winteranfang"))
+
+(setq holiday-general-holidays
+      '((holiday-fixed 1 1 "Neujahr")
+        (holiday-fixed 5 1 "1. Mai")
+        (holiday-fixed 10 3 "Tag der Deutschen Einheit")))
+
+;; Feiertage für Bayern, weitere auskommentiert
+(setq holiday-christian-holidays
+      '((holiday-float 12 0 -4 "1. Advent" 24)
+        (holiday-float 12 0 -3 "2. Advent" 24)
+        (holiday-float 12 0 -2 "3. Advent" 24)
+        (holiday-float 12 0 -1 "4. Advent" 24)
+        (holiday-fixed 12 25 "1. Weihnachtstag")
+        (holiday-fixed 12 26 "2. Weihnachtstag")
+        (holiday-fixed 1 6 "Heilige Drei Könige")
+        (holiday-easter-etc -48 "Rosenmontag")
+        ;; (holiday-easter-etc -3 "Gründonnerstag")
+        (holiday-easter-etc  -2 "Karfreitag")
+        (holiday-easter-etc   0 "Ostersonntag")
+        (holiday-easter-etc  +1 "Ostermontag")
+        (holiday-easter-etc +39 "Christi Himmelfahrt")
+        (holiday-easter-etc +49 "Pfingstsonntag")
+        (holiday-easter-etc +50 "Pfingstmontag")
+        (holiday-easter-etc +60 "Fronleichnam")
+        (holiday-fixed 8 15 "Mariae Himmelfahrt")
+        (holiday-fixed 11 1 "Allerheiligen")
+        ;; (holiday-float 11 3 1 "Buss- und Bettag" 16)
+        (holiday-float 11 0 1 "Totensonntag" 20)))
+
+
+(setq org-agenda-category-icon-alist
+      `(("teaching" ,(list (all-the-icons-material "school")) nil nil :ascent center)
+        ("events"   ,(list (all-the-icons-material "event")) nil nil :ascent center)
+        ("todo"     ,(list (all-the-icons-material "check")) nil nil :ascent center)
+        ("exams"    ,(list (all-the-icons-material "create")) nil nil :ascent center)
+        ))
+
+(setq org-agenda-block-separator (string-to-char " "))
+(setq org-agenda-format-date 'my-org-agenda-format-date-aligned)
+(setq org-agenda-dim-blocked-tasks 'invisible)
+
+(setq org-archive-location "~/org/archives/%s_archive::")
+
+(defun my-org-agenda-format-date-aligned (date)
+  "Format a DATE string for display in the daily/weekly agenda, or timeline.
+This function makes sure that dates are aligned for easy reading."
+  (require 'cal-iso)
+  (let* ((dayname (calendar-day-name date 1 nil))
+         (day (cadr date))
+         (month (car date))
+         (monthname (elt calendar-month-name-array (- month 1))))
+    (format "  %-2s. %2d %s"
+            dayname day monthname)))
+
+(setq org-agenda-custom-commands
+      '(("o" "Plan"
+         ((agenda "" (
+                      (org-agenda-start-day "-2d")
+                      (org-agenda-span 15)
+                      (org-agenda-overriding-header "Schedule:\n")
+                      (org-agenda-repeating-timestamp-show-all nil)
+                      (org-agenda-remove-tags t)
+                      (org-agenda-prefix-format   "    %-2i  %-15b %t   %s")
+                      (org-agenda-todo-keyword-format "%-1s")
+                      (org-agenda-current-time-string "⮜┈┈┈┈┈┈┈ now")
+                      (org-agenda-deadline-leaders '("Deadline: " "In %3d t:  " "Vor %2d t: "))
+                      (org-agenda-scheduled-leaders '("" ""))
+                      (org-agenda-time-grid (quote ((daily today remove-match)
+                                                    (0800 0900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200)
+                                                    "      " "┈┈┈┈┈┈┈┈┈┈┈┈┈")))
+                      ))))))
+
+(setq org-capture-templates
+     '(("t" "Todo" entry (file+headline "todo.org" "todos") "* [ ] %?
+%i
+%a" :prepend t) ("l" "Teching" entry (file+headline "teaching.org" "Nachhilfe") "* Nachhilfe <Name>%?
+
+am %T" :prepend t) ("e" "Events" entry (file+headline "events.org" "Events") "* %?
+%T" :prepend t) ("p" "Templates for projects") ("pt" "Project-local todo" entry (file+headline +org-capture-project-todo-file "Inbox") "* TODO %?
+%i
+%a" :prepend t) ("pn" "Project-local notes" entry (file+headline +org-capture-project-notes-file "Inbox") "* %U %?
+%i
+%a" :prepend t) ("pc" "Project-local changelog" entry (file+headline +org-capture-project-changelog-file "Unreleased") "* %U %?
+%i
+%a" :prepend t) ("o" "Centralized templates for projects") ("ot" "Project todo" entry #'+org-capture-central-project-todo-file "* TODO %?
+ %i
+ %a" :heading "Tasks" :prepend nil) ("on" "Project notes" entry #'+org-capture-central-project-notes-file "* %U %?
+ %i
+ %a" :heading "Notes" :prepend t) ("oc" "Project changelog" entry #'+org-capture-central-project-changelog-file "* %U %?
+ %i
+ %a" :heading "Changelog" :prepend t)))
+
+(setq org-export-babel-evaluate nil)
+
+
+(require 'epa-file)
+(epa-file-enable)

@@ -53,3 +53,4 @@
 (package! company-posframe)
 (package! ox-twbs)
 (package! ripgrep)
+(package! org-kanban)
