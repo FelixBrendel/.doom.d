@@ -17,6 +17,9 @@
 ;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
 ;;   presentations or streaming.
 ;;
+(setq doom-font (font-spec :family "Noto Sans Mono" :slant 'normal :weight 'normal :height 127 :width 'normal)
+      doom-modeline-major-mode-icon t)
+
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
 ;; font string. You generally only need these two:
 ;; (setq doom-font (font-spec :family "monospace" :size 12 :weight 'semi-light)
@@ -213,9 +216,6 @@
 (use-package! ox-twbs)
 (use-package! org-kanban)
 
-(setq doom-font (font-spec :family "Noto Sans Mono" :foundry "outline" :height 113)
-      doom-modeline-major-mode-icon t)
-
 (put 'projectile-ripgrep 'disabled nil)
 (put 'irony-additional-clang-options 'safe-local-variable #'listp)
 
@@ -341,6 +341,8 @@ am %T" :prepend t) ("e" "Events" entry (file+headline "events.org" "Events") "* 
 
 (setq org-export-babel-evaluate nil)
 
+(with-eval-after-load 'org
+  (org-bullets-mode))
 
 (require 'epa-file)
 (epa-file-enable)
