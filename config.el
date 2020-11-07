@@ -183,6 +183,8 @@
 
 (map! :mode  prog-mode-map  "C-d"         'mark-word-or-next-word-like-this)
 (map! :after prog-mode      "C-d"         'mark-word-or-next-word-like-this)
+(map! :after c-mode        "C-d"         'mark-word-or-next-word-like-this)
+(map! :after c++-mode      "C-d"         'mark-word-or-next-word-like-this)
 
 (map! "C-s"         'swiper
       "C-x b"       '+ivy/switch-buffer
@@ -230,6 +232,14 @@
         (2 compilation-error-face nil t))
       compilation-mode-font-lock-keywords)
 
+
+
+(defun my-c-mode-hook ()
+  (c-set-offset 'brace-list-intro '+)
+  (c-set-offset 'brace-list-close 0))
+
+(add-hook 'c-mode-hook 'my-c-mode-hook)
+(add-hook 'c++-mode-hook 'my-c-mode-hook)
 
 (font-lock-add-keywords
  'c++-mode
