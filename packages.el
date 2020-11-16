@@ -53,5 +53,7 @@
 (package! company-posframe)
 (package! ox-twbs)
 (package! ripgrep)
+
+(package! ox-reveal)
 (package! org-kanban)
 (package! org-bullets)

@@ -201,6 +201,7 @@
 (add-hook 'bat-mode-hook (lambda () (set (make-local-variable 'comment-start) ":: ")))
 
 (use-package! multiple-cursors)
+
 (use-package! ripgrep)
 (use-package! ivy-posframe
   :config
@@ -212,6 +213,7 @@
   :config
   (company-posframe-mode 1))
 
+(use-package! ox-reveal)
 (use-package! ox-twbs)
 (use-package! org-kanban)
 
@@ -350,7 +352,3 @@ am %T" :prepend t) ("e" "Events" entry (file+headline "events.org" "Events") "* 
  %a" :heading "Changelog" :prepend t)))
 
 (setq org-export-babel-evaluate nil)
-
-
-(require 'epa-file)
-(epa-file-enable)
