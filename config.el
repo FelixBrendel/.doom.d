@@ -143,6 +143,7 @@
       ;; then
       (progn
         (mc/mark-next-like-this 1)
+        (mc/cycle-forward)
         (mc/maybe-multiple-cursors-mode))
     ;; else
     (mc--mark-symbol-at-point)))
@@ -150,13 +151,13 @@
 (defun org-in-kanban-p ()
   (save-match-data
     (let ((case-fold-search t)
-	        (lim-up (save-excursion (outline-previous-heading)))
-	        (lim-down (save-excursion (outline-next-heading))))
-	    (when (org-between-regexps-p
-		         "^[ \t]*#\\+begin: kanban"
-		         "^[ \t]*#\\+end"
-		         lim-up lim-down)
-	      t))))
+                (lim-up (save-excursion (outline-previous-heading)))
+                (lim-down (save-excursion (outline-next-heading))))
+            (when (org-between-regexps-p
+                         "^[ \t]*#\\+begin: kanban"
+                         "^[ \t]*#\\+end"
+                         lim-up lim-down)
+              t))))
 
 (defun org-maybe-shift-right ()
   (interactive)
@@ -178,14 +179,6 @@
       "S-<right>" 'org-maybe-shift-right
       "S-<left>"  'org-maybe-shift-left)
 
-;; (map! :map c-mode-map
-      ;; "C-d"         'mark-word-or-next-word-like-this)
-
-(map! :mode  prog-mode-map  "C-d"         'mark-word-or-next-word-like-this)
-(map! :after prog-mode      "C-d"         'mark-word-or-next-word-like-this)
-(map! :after c-mode        "C-d"         'mark-word-or-next-word-like-this)
-(map! :after c++-mode      "C-d"         'mark-word-or-next-word-like-this)
-
 (map! "C-s"         'swiper
       "C-x b"       '+ivy/switch-buffer
       "C-x 4 b"     '+ivy/switch-buffer-other-window
@@ -201,10 +194,9 @@
       :leader "e" 'save-and-find-build-script-and-compile)
 
 (remove-hook 'doom-first-buffer-hook #'smartparens-global-mode)
-(add-hook 'bat-mode-hook (lambda () (set (make-local-variable 'comment-start) ":: ")))
+(add-hook 'bat-mode-hook (lambda () (set (make-local-variable 'comment-start) "REM ")))
 
 (use-package! multiple-cursors)
-
 (use-package! ripgrep)
 (use-package! ivy-posframe
   :config
@@ -234,20 +226,17 @@
         (2 compilation-error-face nil t))
       compilation-mode-font-lock-keywords)
 
-
-
 (defun my-c-mode-hook ()
+  (bind-key* "C-d" #'mark-word-or-next-word-like-this)
   (c-set-offset 'brace-list-intro '+)
   (c-set-offset 'brace-list-close 0))
 
-(add-hook 'c-mode-hook 'my-c-mode-hook)
+(add-hook 'c-mode-hook   'my-c-mode-hook)
 (add-hook 'c++-mode-hook 'my-c-mode-hook)
 
 (font-lock-add-keywords
  'c++-mode
- '(("\\<\\(defer\\|proc\\)\\>" . font-lock-keyword-face)))
-
-
+ '(("\\<\\(defer\\|proc\\|panic\\)\\>" . font-lock-keyword-face)))
 
 (setq! calendar-week-start-day 0
        calendar-day-name-array ["Sonntag" "Montag" "Dienstag" "Mittwoch"
@@ -255,7 +244,6 @@
        calendar-month-name-array ["Januar" "Februar" "März" "April" "Mai"
                                   "Juni" "Juli" "August" "September"
                                   "Oktober" "November" "Dezember"])
-
 
 (setq solar-n-hemi-seasons
       '("Frühlingsanfang" "Sommeranfang" "Herbstanfang" "Winteranfang"))
@@ -291,10 +279,9 @@
 
 (setq org-agenda-category-icon-alist
       `(("teaching" ,(list (all-the-icons-material "school")) nil nil :ascent center)
-        ("events"   ,(list (all-the-icons-material "event")) nil nil :ascent center)
-        ("todo"     ,(list (all-the-icons-material "check")) nil nil :ascent center)
-        ("exams"    ,(list (all-the-icons-material "create")) nil nil :ascent center)
-        ))
+        ("events"   ,(list (all-the-icons-material "event"))  nil nil :ascent center)
+        ("todo"     ,(list (all-the-icons-material "check"))  nil nil :ascent center)
+        ("exams"    ,(list (all-the-icons-material "create")) nil nil :ascent center)))
 
 (setq org-agenda-block-separator (string-to-char " "))
 (setq org-agenda-format-date 'my-org-agenda-format-date-aligned)
@@ -353,5 +340,4 @@ am %T" :prepend t) ("e" "Events" entry (file+headline "events.org" "Events") "* 
 
 (setq org-export-babel-evaluate nil)
 
-(with-eval-after-load 'org
-  (org-bullets-mode))
+(add-hook 'org-mode-hook 'org-bullets-mode)
