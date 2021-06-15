@@ -49,11 +49,25 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;(unpin! t)
 
+
 (package! ivy-posframe)
 (package! company-posframe)
 (package! ox-twbs)
 (package! ripgrep)
 
+;; (package! irony)
+;; (package! irony-eldoc)
+(package! modern-cpp-font-lock)
+(package! glsl-mode)
+
+(package! valign)
+
+(package! zig-mode)
+
 (package! ox-reveal)
+(package! ox-hugo)
 (package! org-kanban)
 (package! org-bullets)
+(package! org-drill)
+(package! org-drill-table)
+(package! org-fragtog)

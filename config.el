@@ -7,7 +7,7 @@
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets.
 (setq user-full-name    "Felix Brendel"
-      user-mail-address "felixbrendel@airmail.cc")
+      user-mail-address "felix@brendel.io")
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
@@ -16,8 +16,17 @@
 ;; + `doom-variable-pitch-font'
 ;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
 ;;   presentations or streaming.
-;;
-(setq doom-font (font-spec :family "Noto Sans Mono" :slant 'normal :weight 'normal :height 127 :width 'normal)
+;
+
+;; (set-language-environment "Korean")
+(setq locale-coding-system 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(set-selection-coding-system 'utf-8)
+(prefer-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+
+(setq doom-font (font-spec :family "noto sans mono" :slant 'normal :weight 'normal :height 127 :width 'normal)
       doom-modeline-major-mode-icon t)
 
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
@@ -34,6 +43,13 @@
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/org/")
+(with-eval-after-load 'org
+  ;; Allow multiple line Org emphasis markup. Like bold
+  ;; http://emacs.stackexchange.com/a/13828/115
+  (setcar (nthcdr 4 org-emphasis-regexp-components) 20) ;Up to 20 lines, default is just 1
+  ;; Below is needed to apply the modified `org-emphasis-regexp-components'
+  ;; settings from above.
+  (org-set-emph-re 'org-emphasis-regexp-components org-emphasis-regexp-components))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -131,9 +147,10 @@
           (list (lambda (&rest _) (compilation-minor-mode 1))))
     (compile (concat build-script-path build-script-name) t)))
 
+
 (defun lookup-docs-for-symbol-at-point ()
   (interactive)
-  (+lookup/online (thing-at-point 'symbol) "DevDocs.io"))
+    (+lookup/online (thing-at-point 'symbol) "DevDocs.io"))
 
 (defun mark-word-or-next-word-like-this ()
   "if there is no active region the word under
@@ -175,6 +192,11 @@
   (interactive)
   (org-agenda nil "o"))
 
+(defun open-my-drill-calendar ()
+  (interactive)
+  (org-agenda nil "d"))
+
+
 (map! :map org-mode-map
       "S-<right>" 'org-maybe-shift-right
       "S-<left>"  'org-maybe-shift-left)
@@ -188,15 +210,112 @@
       "C-S-c C-S-c" 'mc/edit-lines
       "C-#"         'comment-line
       "M-d"         'lookup-docs-for-symbol-at-point
-      "<f1>"        '+doom-dashboard/open
+      "<f1>"        'open-my-drill-calendar
       "<f2>"        'open-my-calendar
       "<f5>"        'save-and-find-build-script-and-compile
+      "M-SPC"       'change-lang
       :leader "e" 'save-and-find-build-script-and-compile)
 
-(remove-hook 'doom-first-buffer-hook #'smartparens-global-mode)
-(add-hook 'bat-mode-hook (lambda () (set (make-local-variable 'comment-start) "REM ")))
 
+;; (add-hook 'bat-mode-hook (lambda () (set (make-local-variable 'comment-start) "REM ")))
+(remove-hook 'doom-first-buffer-hook #'smartparens-global-mode)
+
+;; (use-package! irony)
+;; (use-package! irony-eldoc)
+;; (use-package! modern-cpp-font-lock)
+
+(c-add-style "FELIX"
+             '("gnu"
+               (c-basic-offset . 4)     ; Guessed value
+               (c-offsets-alist
+                (arglist-cont . 0)      ; Guessed value
+                (arglist-intro . +)     ; Guessed value
+                (block-close . 0)       ; Guessed value
+                (brace-entry-open . 0)  ; Guessed value
+                (brace-list-close . 0)  ; Guessed value
+                (brace-list-entry . 0)  ; Guessed value
+                (brace-list-intro . +)  ; Guessed value
+                (defun-block-intro . +) ; Guessed value
+                (defun-close . 0)       ; Guessed value
+                (defun-open . 0)        ; Guessed value
+                (else-clause . 0)       ; Guessed value
+                (func-decl-cont . +)    ; Guessed value
+                (inline-close . 0)      ; Guessed value
+                (innamespace . +)       ; Guessed value
+                (namespace-close . 0)   ; Guessed value
+                (statement . 0)         ; Guessed value
+                (statement-block-intro . +) ; Guessed value
+                (statement-cont . +)    ; Guessed value
+                (substatement . +)      ; Guessed value
+                (substatement-open . 0) ; Guessed value
+                (topmost-intro . 0)     ; Guessed value
+                (access-label . -)
+                (annotation-top-cont . 0)
+                (annotation-var-cont . +)
+                (arglist-close . c-lineup-close-paren)
+                (arglist-cont-nonempty . c-lineup-arglist)
+                (block-open . 0)
+                (brace-list-open . +)
+                (c . c-lineup-C-comments)
+                (case-label . +)
+                (catch-clause . 0)
+                (class-close . 0)
+                (class-open . 0)
+                (comment-intro . c-lineup-comment)
+                (composition-close . 0)
+                (composition-open . 0)
+                (cpp-define-intro c-lineup-cpp-define +)
+                (cpp-macro . -1000)
+                (cpp-macro-cont . +)
+                (do-while-closure . 0)
+                (extern-lang-close . 0)
+                (extern-lang-open . 0)
+                (friend . 0)
+                (inclass . +)
+                (incomposition . +)
+                (inexpr-class . +)
+                (inexpr-statement . +)
+                (inextern-lang . +)
+                (inher-cont . c-lineup-multi-inher)
+                (inher-intro . +)
+                (inlambda . 0)
+                (inline-open . 0)
+                (inmodule . +)
+                (knr-argdecl . 0)
+                (knr-argdecl-intro . 5)
+                (label . 0)
+                (lambda-intro-cont . +)
+                (member-init-cont . c-lineup-multi-inher)
+                (member-init-intro . +)
+                (module-close . 0)
+                (module-open . 0)
+                (namespace-open . 0)
+                (objc-method-args-cont . c-lineup-ObjC-method-args)
+                (objc-method-call-cont c-lineup-ObjC-method-call-colons c-lineup-ObjC-method-call +)
+                (objc-method-intro .
+                                   [0])
+                (statement-case-intro . +)
+                (statement-case-open . +)
+                (stream-op . c-lineup-streamop)
+                (string . -1000)
+                (substatement-label . 0)
+                (template-args-cont c-lineup-template-args +)
+                (topmost-intro-cont first c-lineup-topmost-intro-cont c-lineup-gnu-DEFUN-intro-cont))))
+
+ (setq c-default-style "FELIX")
+
+(use-package! ox-hugo
+  :after ox)
+
+(use-package! valign
+  :config
+  (add-hook 'org-mode-hook #'valign-mode))
+
+(setq magit-todos-nice nil)
+
+(use-package! zig-mode)
 (use-package! multiple-cursors)
+(use-package! glsl-mode)
 (use-package! ripgrep)
 (use-package! ivy-posframe
   :config
@@ -211,6 +330,11 @@
 (use-package! ox-reveal)
 (use-package! ox-twbs)
 (use-package! org-kanban)
+(use-package! org-fragtog)
+(use-package! org-drill)
+(use-package! org-table)
+
+(add-hook 'org-mode-hook 'org-fragtog-mode)
 
 (put 'projectile-ripgrep 'disabled nil)
 (put 'irony-additional-clang-options 'safe-local-variable #'listp)
@@ -228,11 +352,21 @@
 
 (defun my-c-mode-hook ()
   (bind-key* "C-d" #'mark-word-or-next-word-like-this)
+  (c-set-offset 'substatement-open 0)
+  (c-set-offset 'case-label '+)
   (c-set-offset 'brace-list-intro '+)
   (c-set-offset 'brace-list-close 0))
 
+(add-hook 'java-mode-hook   'my-c-mode-hook)
 (add-hook 'c-mode-hook   'my-c-mode-hook)
 (add-hook 'c++-mode-hook 'my-c-mode-hook)
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
+(add-hook 'c++-mode-hook #'modern-c++-font-lock-mode)
+(add-hook 'org-mode-hook #'hl-todo-mode)
+
+;; (add-hook 'c++-mode-hook 'irony-mode)
+;; (add-hook 'c-mode-hook 'irony-mode)
+;; (add-hook 'irony-mode-hook #'irony-eldoc)
 
 (font-lock-add-keywords
  'c++-mode
@@ -277,11 +411,20 @@
         (holiday-float 11 0 1 "Totensonntag" 20)))
 
 
+
+(setq org-tags-column -90)
+(setq org-log-done t)
 (setq org-agenda-category-icon-alist
-      `(("teaching" ,(list (all-the-icons-material "school")) nil nil :ascent center)
-        ("events"   ,(list (all-the-icons-material "event"))  nil nil :ascent center)
-        ("todo"     ,(list (all-the-icons-material "check"))  nil nil :ascent center)
-        ("exams"    ,(list (all-the-icons-material "create")) nil nil :ascent center)))
+      `(("teaching" ,(list "\xf130")       nil nil :ascent center)
+        ("pizza"    ,(list (all-the-icons-material "local_pizza"))           nil nil)
+        ("coffee"   ,(list (all-the-icons-faicon "coffee"))           nil nil)
+        ("events"   ,(list (all-the-icons-faicon "calendar-check-o")) nil nil)
+        ("todo"     ,(list (all-the-icons-faicon "check"))            nil nil)
+        ("pprog"    ,(list (all-the-icons-faicon "align-left"))       nil nil)
+        ("dbsys"    ,(list (all-the-icons-faicon "table"))            nil nil)
+        ("gemji"    ,(list (all-the-icons-faicon "gamepad"))          nil nil)
+        ("mocap"    ,(list (all-the-icons-faicon "eye"))              nil nil)
+        ("uni"      ,(list (all-the-icons-faicon "graduation-cap"))   nil nil)))
 
 (setq org-agenda-block-separator (string-to-char " "))
 (setq org-agenda-format-date 'my-org-agenda-format-date-aligned)
@@ -300,23 +443,99 @@ This function makes sure that dates are aligned for easy reading."
     (format "  %-2s. %2d %s"
             dayname day monthname)))
 
+(defun format-lectures ()
+  (concat "[ " (nth 0 (org-get-outline-path)) " ]"))
+
+(defun format-deadlines ()
+  (concat (format-lectures)
+          " <"
+          (org-format-time-string "%d.%m.%Y" (org-get-deadline-time (point)))
+          ">"))
+
+
+(defun my/org-skip-function (part)
+  "Partitions things to decide if they should go into the agenda '(agenda future-scheduled done)"
+  (let* ((skip (save-excursion (org-entry-end-position)))
+         (dont-skip nil)
+         (deadline (org-get-deadline-time (point)))
+         (deadline-seconds (time-convert deadline 'integer))
+         (time-now (time-convert (current-time) 'integer))
+         (result
+          (or (and deadline
+                   (< time-now (+ deadline-seconds 86400))
+                   ;; 86400 == seconds per day -- basically check if the
+                   ;; deadline time (which maybe was midnight) is today or in
+                   ;; the future
+                   'agenda)
+              'done)))                 ; Everything else should go in the agenda
+    (if (eq result part) dont-skip skip)))
+
 (setq org-agenda-custom-commands
       '(("o" "Plan"
-         ((agenda "" (
-                      (org-agenda-start-day "-2d")
-                      (org-agenda-span 15)
-                      (org-agenda-overriding-header "Schedule:\n")
-                      (org-agenda-repeating-timestamp-show-all nil)
-                      (org-agenda-remove-tags t)
-                      (org-agenda-prefix-format   "    %-2i  %-15b %t   %s")
-                      (org-agenda-todo-keyword-format "%-1s")
-                      (org-agenda-current-time-string "⮜┈┈┈┈┈┈┈ now")
-                      (org-agenda-deadline-leaders '("Deadline: " "In %3d t:  " "Vor %2d t: "))
-                      (org-agenda-scheduled-leaders '("" ""))
-                      (org-agenda-time-grid (quote ((daily today remove-match)
-                                                    (0800 0900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200)
-                                                    "      " "┈┈┈┈┈┈┈┈┈┈┈┈┈")))
-                      ))))))
+         ((tags-todo
+           "today"
+           ((org-agenda-remove-tags t)
+            (org-agenda-overriding-header "Other todos today:\n")))
+          (todo ""
+                ((org-agenda-overriding-header "Lectures still to watch:\n")
+                 (org-agenda-files '("~/org/uni.org"))
+                 (org-agenda-prefix-format   "  %-2i  %-10(format-lectures) ")
+                 (org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline 'timestamp))))
+          (tags  "assignments"
+                 ((org-agenda-skip-function '(my/org-skip-function 'agenda))
+                  (org-agenda-prefix-format   "  %-2i  %-23(format-deadlines) ")
+                  (org-agenda-sorting-strategy '(deadline-up))
+                  (org-agenda-files '("~/org/uni.org"))
+                  (org-agenda-overriding-header "Due assignments:\n")
+                  (org-agenda-remove-tags t)))
+          (agenda ""
+                  ((org-agenda-start-day "-1d")
+                   (org-agenda-span 15)
+                   (org-agenda-overriding-header "Agenda:\n")
+                   (org-agenda-repeating-timestamp-show-all nil)
+                   (org-agenda-remove-tags t)
+                   (org-agenda-prefix-format   "    %-2i  %-20b %-11t  %s")
+                   (org-agenda-todo-keyword-format "%-1s")
+                   (org-agenda-current-time-string "<┈┈┈┈┈┈┈┈┈┈ now ┈┈┈┈┈┈┈┈┈┈>")
+                   (org-agenda-deadline-leaders '("Deadline:  " "In %3d t:  " "Vor %2d t: "))
+                   (org-agenda-scheduled-leaders '("Scheduled: " "Overdue: "))
+                   (org-agenda-time-grid '((daily today remove-match)
+                                           (0800 0900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200)
+                                           " . . ." "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"))))))))
+
+;; (defun org-agenda-delete-empty-blocks ()
+;;   "Remove empty agenda blocks.
+;;   A block is identified as empty if there are fewer than 2
+;;   non-empty lines in the block (excluding the line with
+;;   `org-agenda-block-separator' characters)."
+;;   (when org-agenda-compact-blocks
+;;     (user-error "Cannot delete empty compact blocks"))
+;;   (setq buffer-read-only nil)
+;;   (save-excursion
+;;     (goto-char (point-min))
+;;     (let* ((blank-line-re "^\\s-*$")
+;;            (content-line-count (if (looking-at-p blank-line-re) 0 1))
+;;            (start-pos (point))
+;;            (block-re (format "%c\\{10,\\}" org-agenda-block-separator)))
+;;       (while (and (not (eobp)) (forward-line))
+;;         (cond
+;;          ((looking-at-p block-re)
+;;           (when (< content-line-count 2)
+;;             (delete-region start-pos (1+ (point-at-bol))))
+;;           (setq start-pos (point))
+;;           (forward-line)
+;;           (setq content-line-count (if (looking-at-p blank-line-re) 0 1)))
+;;          ((not (looking-at-p blank-line-re))
+;;           (setq content-line-count (1+ content-line-count)))))
+;;       (when (< content-line-count 2)
+;;         (delete-region start-pos (point-max)))
+;;       (goto-char (point-min))
+;;       ;; The above strategy can leave a separator line at the beginning
+;;       ;; of the buffer.
+;;       (when (looking-at-p block-re)
+;;         (delete-region (point) (1+ (point-at-eol))))))
+;;   (setq buffer-read-only t))
+;; (add-hook 'org-agenda-finalize-hook #'org-agenda-delete-empty-blocks)
 
 (setq org-capture-templates
      '(("t" "Todo" entry (file+headline "todo.org" "todos") "* [ ] %?
@@ -341,3 +560,21 @@ am %T" :prepend t) ("e" "Events" entry (file+headline "events.org" "Events") "* 
 (setq org-export-babel-evaluate nil)
 
 (add-hook 'org-mode-hook 'org-bullets-mode)
+
+
+(setq lang :de)
+(defun change-lang ()
+  (interactive)
+  ;; (keyboard-translate ?z ?y)
+  (if (eq lang :de)
+      (progn
+        (keyboard-translate ?y ?z)  ; For german keyboards
+        (keyboard-translate ?z ?y)
+        (set-input-method 'korean-hangul)
+        (setq lang :kr))
+    (toggle-input-method nil)
+    (keyboard-translate ?y ?y)  ; For german keyboards
+    (keyboard-translate ?z ?z)
+    (setq lang :de)))
+
+(open-my-calendar)

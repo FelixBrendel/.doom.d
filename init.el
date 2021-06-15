@@ -15,8 +15,8 @@
 ;;      directory (for easy access to its source code).
 
 (doom! :input
-       ;;chinese
-       ;;japanese
+       ;; chinese
+       ;; japanese
 
        :completion
        company           ; the ultimate code completion backend
@@ -91,7 +91,7 @@
        (eval +overlay)     ; run code, run (also, repls)
        ;;gist              ; interacting with github gists
        lookup              ; navigate your code and its documentation
-       ;;lsp
+       ;; lsp
        ;;macos             ; MacOS-specific commands
        magit               ; a git porcelain for Emacs
        ;;make              ; run make tasks from Emacs
@@ -111,16 +111,16 @@
        ;;common-lisp       ; if you've seen one lisp, you've seen them all
        ;;coq               ; proofs-as-programs
        ;;crystal           ; ruby at the speed of c
-       csharp            ; unity, .NET, and mono shenanigans
+       csharp              ; unity, .NET, and mono shenanigans
        ;;data              ; config/data formats
        ;;(dart +flutter)   ; paint ui and not much else
        ;;elixir            ; erlang done right
        ;;elm               ; care for a cup of TEA?
-       emacs-lisp        ; drown in parentheses
+       emacs-lisp          ; drown in parentheses
        ;;erlang            ; an elegant language for a more civilized age
        ;;ess               ; emacs speaks statistics
        ;;faust             ; dsp, but you get to keep your soul
-       ;;fsharp           ; ML stands for Microsoft's Language
+       ;;fsharp            ; ML stands for Microsoft's Language
        ;;fstar             ; (dependent) types and (monadic) effects and Z3
        ;;gdscript          ; the language you waited for
        ;;(go +lsp)         ; the hipster dialect
@@ -137,7 +137,7 @@
        ;;factor
        ;;ledger            ; an accounting system in Emacs
        ;;lua               ; one-based indices? one-based indices
-       ;;markdown          ; writing docs for people to ignore
+       markdown          ; writing docs for people to ignore
        ;;nim               ; python + lisp at the speed of c
        ;;nix               ; I hereby declare "nix geht mehr!"
        ;;ocaml             ; an objective camel
