@@ -125,9 +125,9 @@
 
 (cond ((string= system-type "windows-nt")
        ;; if windows
-       (setq build-script-name "build.bat"))
+       (setq build-script-names '("build.bat" "bob.exe")))
       (t ;; if linux
-       (setq build-script-name "build.sh")))
+       (setq build-script-names '("build.sh" "bob"))))
 
 
 (defun save-and-find-build-script-and-compile ()
@@ -135,7 +135,18 @@
   (interactive)
 
   (when (and buffer-file-name (buffer-modified-p)) (save-buffer))
-  (let ((build-script-path (locate-dominating-file (expand-file-name default-directory) build-script-name)))
+
+  (let ((build-script-path
+         (eval (macroexp--expand-all `(or . ,(mapcar
+                                              (lambda (build-script-name)
+                                                (let ((dir (locate-dominating-file
+                                                            (expand-file-name default-directory)
+                                                            build-script-name)))
+                                                  (message (concat "looking for " build-script-name))
+                                                  (when dir
+                                                    (message "found")
+                                                    (concat dir build-script-name))))
+                                              build-script-names))))))
     (unless build-script-path
       (error (concat "The default buildscript '" build-script-name "' cannot be found")))
     ;; NOTE(Felix): because we will set compilation to comint mode,
@@ -145,7 +156,7 @@
     ;; we would if we would not switch off the comint mode.
     (setq compilation-finish-functions
           (list (lambda (&rest _) (compilation-minor-mode 1))))
-    (compile (concat build-script-path build-script-name) t)))
+    (compile build-script-path t)))
 
 
 (defun lookup-docs-for-symbol-at-point ()
