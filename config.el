@@ -130,6 +130,16 @@
        (setq build-script-names '("build.sh" "bob"))))
 
 
+;; (require 'compile)
+;; (add-to-list 'compilation-error-regexp-alist '("^\\(.*\\)(\\([0-9]+\\),[0-9]+): warning" 1 2))
+
+(with-eval-after-load 'compile
+  (add-to-list 'compilation-error-regexp-alist 'msbuild-error)
+  (add-to-list 'compilation-error-regexp-alist-alist
+               '(msbuild-error
+                 "^\\(.*?\\)(\\([0-9]+\\),\\([0-9]+\\)): \\(?:error\\|\\(warning\\)\\) .*?:" 1 2 3 (4))))
+
+
 (defun save-and-find-build-script-and-compile ()
   "Walks upward the directory tree until a buildscript is found"
   (interactive)
