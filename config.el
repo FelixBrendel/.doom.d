@@ -25,8 +25,8 @@
 ;;  - [X] indent pasted images the same as the cursor
 ;;  - [X] never export :toc: sections? -> like noexport
 ;;  - [X] Autocomplete popup temporarily destroys inline images under the popup
+;;  - [X] disable writegood mode
 
-;;  - [ ] disable writegood mode
 ;;  - [ ] C-j does not work in org
 ;;  - [ ] org-fill-paragraph should not remove latex preview
 ;;  - [ ] knowledge base export -> .bib file

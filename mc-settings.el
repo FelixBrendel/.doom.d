@@ -26,4 +26,5 @@
 (setq mc/cmds-to-run-once
       '(
         consult-line
+        mark-word-or-next-word-like-this
         ))
