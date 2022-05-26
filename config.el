@@ -132,52 +132,52 @@
   (org-roam-db-location (concat org-directory "vault/.roam.db"))
   (org-roam-capture-templates
    '(("d" "General Notes" plain "%?" :target
-      (file+head "Default/${slug}.org" "#+title: ${title}\n")
+      (file+head "Default/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n")
       :unnarrowed t)
      ("k" "Korean" plain "%?" :target
-      (file+head "Korean/${slug}.org" "#+title: ${title}\n#+filetags: :korean:\n")
+      (file+head "Korean/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :korean:\n")
       :unnarrowed t)
      ("a" "Notes for APIs")
      ("aw" "Win32 API" plain "%?" :target
-      (file+head "APIs/win32/${slug}.org" "#+title: [win32] ${title}\n#+filetags: :win32:\n")
+      (file+head "APIs/win32/${slug}.org" "#+title: [win32] ${title}\n#+date: %<%F>\n#+filetags: :win32:\n")
       :unnarrowed t)
      ("av" "Vulkan API" plain "%?" :target
-      (file+head "APIs/vulkan/${slug}.org" "#+title: [vk] ${title}\n#+filetags: :vulkan:\n")
+      (file+head "APIs/vulkan/${slug}.org" "#+title: [vk] ${title}\n#+date: %<%F>\n#+filetags: :vulkan:\n")
       :unnarrowed t)
      ("ag" "OpenGL" plain "%?" :target
-      (file+head "APIs/opengl/${slug}.org" "#+title: [gl] ${title}\n#+filetags: :opengl:\n")
+      (file+head "APIs/opengl/${slug}.org" "#+title: [gl] ${title}\n#+date: %<%F>\n#+filetags: :opengl:\n")
       :unnarrowed t)
 
      ("u" "Notes for Uni")
      ("uu" "Uni General" plain "%?" :target
-      (file+head "Uni/${slug}.org" "#+title: ${title}\n#+filetags: :chem:\n")
+      (file+head "Uni/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :chem:\n")
       :unnarrowed t)
      ("um" "Uni Math")
      ("umm" "Uni Math General" plain "%?" :target
-      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+filetags: :math:\n")
+      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :math:\n")
       :unnarrowed t)
      ("umc" "Uni Math Calculus" plain "%?" :target
-      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+filetags: :math:calculus:\n")
+      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :math:calculus:\n")
       :unnarrowed t)
      ("ump" "Uni Math Probability" plain "%?" :target
-      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+filetags: :math:probability:\n")
+      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :math:probability:\n")
       :unnarrowed t)
      ("uml" "Uni Math Linear Algebra" plain "%?" :target
-      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+filetags: :math:linear-algebra:\n")
+      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :math:linear-algebra:\n")
       :unnarrowed t)
 
      ("uc" "Uni/Computer Architecture" plain "%?" :target
-      (file+head "Uni/Computer Architecture/${slug}.org" "#+title: ${title}\n#+filetags: :computer-architecture:\n")
+      (file+head "Uni/Computer Architecture/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :computer-architecture:\n")
       :unnarrowed t)
      ("ug" "Uni/Graphics" plain "%?" :target
-      (file+head "Uni/Graphics/${slug}.org" "#+title: ${title}\n#+filetags: :computer-graphics:\n")
+      (file+head "Uni/Graphics/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :computer-graphics:\n")
       :unnarrowed t)
      ("ud" "Uni/Deep Learning" plain "%?" :target
-      (file+head "Uni/Deep Learning/${slug}.org" "#+title: ${title}\n#+filetags: :deep-learning:\n")
+      (file+head "Uni/Deep Learning/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :deep-learning:\n")
       :unnarrowed t)
 
      ("c" "Uni/Chemie" plain "%?" :target
-      (file+head "Uni/Chemie/${slug}.org" "#+title: ${title}\n#+setupfile: setupfile.org\n")
+      (file+head "Uni/Chemie/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+setupfile: setupfile.org\n")
       :unnarrowed t)
      ))
 
@@ -287,9 +287,9 @@ Performs a database upgrade when required."
   (setq is-windows (string= system-type "windows-nt"))
   (setq build-script-names (list
                             (if is-windows (cons "build.ps1" "powershell.exe -ExecutionPolicy Unrestricted -File build.ps1"))
-                            (if is-windows "build.bat" "build.sh")
-                            (if is-windows "build-windows.bat" "build-linux.sh")
-                            (if is-windows "bob.exe"   "bob")
+                            (if is-windows "build.bat"         "./build.sh")
+                            (if is-windows "build-windows.bat" "./build-linux.sh")
+                            (if is-windows "bob.exe"           "./bob")
                             (cons "bob.c" (let ((target-exe (if is-windows "bob.exe" "bob")))
                                             (cond ((executable-find "clang") (concat "clang bob.c -o " target-exe))
                                                   ((executable-find "gcc")   (concat "gcc bob.c -o "   target-exe))
@@ -329,10 +329,15 @@ Performs a database upgrade when required."
 
   (defun find-closest-build-script ()
     (let* ((potential-paths (mapcar (lambda (build-script-name)
-                                      (let* ((name (if (consp build-script-name) (car build-script-name) build-script-name))
-                                             (path (locate-dominating-file (expand-file-name default-directory) name)))
-                                        (when path
-                                          (cons path name))))
+                                      (let ((name (if (consp build-script-name) (car build-script-name) build-script-name)))
+                                        (when name ;; NOTE(Felix): name could be
+                                                   ;; nil since this kind of
+                                                   ;; build system is not
+                                                   ;; available on this
+                                                   ;; architecture
+                                          (let ((path (locate-dominating-file (expand-file-name default-directory) name)))
+                                            (when path
+                                              (cons path name))))))
                                     build-script-names))
            (existing-paths (filter-non-nil potential-paths)))
 
@@ -355,7 +360,6 @@ Performs a database upgrade when required."
     (let* ((path-and-script (find-closest-build-script))
            (path   (car path-and-script))
            (script (cdr path-and-script)))
-
       (unless path
         (error "no build files found"))
 
@@ -925,7 +929,7 @@ This function makes sure that dates are aligned for easy reading."
 
           ;; config
           (setq org-element-use-cache nil)
-          (setq org-hugo-base-dir "D:\\Code\\test\\knowledge-base\\")
+          (setq org-hugo-base-dir "/home/felix/code/knowledge_base/")
           (setq org-format-latex-options
                 '(:foreground default :background default :scale 2 :html-foreground "White" :html-background "Transparent" :html-scale 1.0 :matchers
                               ("begin" "$1" "$" "$$" "\\(" "\\[")))
@@ -1010,12 +1014,12 @@ This function makes sure that dates are aligned for easy reading."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; startup
-(add-hook 'window-setup-hook
-          (lambda ()
-            (neotree-toggle)
-            (neotree-dir org-directory)
-            (neotree-refresh)
-            (toggle-frame-maximized)
-            (other-window 1)))
+;; (add-hook 'window-setup-hook
+;;           (lambda ()
+;;             (neotree-toggle)
+;;             (neotree-dir org-directory)
+;;             (neotree-refresh)
+;;             (toggle-frame-maximized)
+;;             (other-window 1)))
 
 (push '(organization . organization) citeproc-blt-to-csl-standard-alist)
