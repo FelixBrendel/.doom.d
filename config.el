@@ -25,8 +25,10 @@
 ;;  - [X] indent pasted images the same as the cursor
 ;;  - [X] never export :toc: sections? -> like noexport
 ;;  - [X] Autocomplete popup temporarily destroys inline images under the popup
+;;  - [X] undo can't be undone
+;;  - [X] fixed latex header for previews (use #+latex_header_extra: to exclude from previews)
+;;  - [X] C-j does not work in org
 
-;;  - [ ] C-j does not work in org
 ;;  - [ ] org-fill-paragraph should not remove latex preview
 ;;  - [ ] knowledge base export -> .bib file
 ;;  - [ ] org insert screenshot from clipboard (Linux)
@@ -108,6 +110,23 @@
   :defer t)
 (use-package! valign)
 (use-package! biblio)
+
+(use-package! dap-mode
+  :config
+  (require 'dap-mode)
+  (require 'dap-gdb-lldb)
+  (dap-gdb-lldb-setup)
+  (dap-mode 1)
+  ;; The modes below are optional
+  (dap-ui-mode 1)
+  ;; enables mouse hover support
+  (dap-tooltip-mode 1)
+  ;; use tooltips for mouse hover
+  ;; if it is not enabled `dap-mode' will use the minibuffer.
+  ;; displays floating panel with debug buttons
+  ;; requies emacs 26+
+  (dap-ui-controls-mode 1))
+
 (use-package! multiple-cursors
   :config
   (after! multiple-cursors-core
@@ -355,6 +374,10 @@ Performs a database upgrade when required."
           (if (consp first) (cdr first) first)
         (translate-build-file-to-command file (cdr build-scrips)))))
 
+  (setq compilation-finish-functions
+        (list (lambda (&rest _)
+                (compilation-minor-mode 1))))
+
   (defun save-and-find-build-script-and-compile ()
     (interactive)
     (let* ((path-and-script (find-closest-build-script))
@@ -366,9 +389,6 @@ Performs a database upgrade when required."
       (let ((command (translate-build-file-to-command script))
             (curr-dir default-directory))
 
-        (setq compilation-finish-functions
-              (list (lambda (&rest _)
-                      (compilation-minor-mode 1))))
         (cd path)
         (compilation-start command t)
         (cd curr-dir))))
@@ -479,7 +499,9 @@ Performs a database upgrade when required."
                                                 (eq 'BITMAP (aref clip 2)))
                                            t
                                          )))
-      (eq system-type 'gnu/linux)    (error "TODO: implement this for linux")))
+      ((eq system-type 'gnu/linux)    nil
+       ;; (error "TODO: implement this for linux")
+       )))
 
   (defun org-paste-screenshot-from-clipboard ()
     (interactive)
@@ -653,6 +675,23 @@ in a 'images' folder and insert a link to it in the org buffer."
   ;;   https://github.com/hlissner/doom-emacs/issues/5924
   (add-hook 'org-mode-hook (lambda () (remove-hook 'before-save-hook 'org-encrypt-entries t)) 100)
 
+
+  ;; NOTE(Felix): we gotta set org-format-latex-options here after requiring org,
+  ;;   otherwise if we use with-eval-after-load, it would only get loaded after we
+  ;;   open the first org file, which at load time would already try to latex
+  ;;   compile the fragments, before executing the `setq org-format-latex-options'
+  ;;   it seems ...
+  (require 'org)
+  (require 'ox-latex)
+  (add-to-list 'org-export-exclude-tags "toc")
+  (add-to-list 'org-latex-packages-alist '("" "tikz" t) t)
+  (add-to-list 'org-latex-packages-alist '("" "pgfplots" t) t)
+
+  (setq org-format-latex-options
+        '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
+          ("begin" "$1" "$" "$$" "\\(" "\\[")))
+  (setq org-preview-latex-image-directory "./images/latex/")
+
   (setq org-export-babel-evaluate nil
         org-fontify-quote-and-verse-blocks t
         org-fontify-whole-heading-line t
@@ -668,7 +707,7 @@ in a 'images' folder and insert a link to it in the org buffer."
 
         org-preview-latex-default-process 'dvisvgm
         org-preview-latex-process-alist
-        '((dvipng :programs
+        `((dvipng :programs
            ("latex" "dvipng")
            :description "dvi > png" :message "you need to install the programs: latex and dvipng." :image-input-type "dvi" :image-output-type "png" :image-size-adjust
            (1.0 . 1.0)
@@ -680,12 +719,13 @@ in a 'images' folder and insert a link to it in the org buffer."
            ("dvipng -D %D -T tight -bg Transparent -o %O %f"))
           (dvisvgm :programs
            ("latex" "dvisvgm")
-           :description "dvi > svg" :message "you need to install the programs: latex and dvisvgm." :image-input-type "dvi" :image-output-type "svg" :image-size-adjust
-           (1.7 . 1.5)
-           :latex-compiler
-           ("latex -interaction nonstopmode -output-directory %o %f")
-           :image-converter
-           ("dvisvgm %f -n -b min -c %S -o %O"))
+           :description "dvi > svg"
+           :message "you need to install the programs: latex and dvisvgm."
+           :image-input-type "dvi"
+           :image-output-type "svg"
+           :image-size-adjust (1.7 . 1.5)
+           :latex-compiler ("latex -interaction nonstopmode -output-directory %o %f")
+           :image-converter ("dvisvgm %f -n -b min -c %S -o %O"))
           (imagemagick :programs
            ("latex" "convert")
            :description "pdf > png" :message "you need to install the programs: latex and imagemagick." :image-input-type "pdf" :image-output-type "png" :image-size-adjust
@@ -718,22 +758,58 @@ in a 'images' folder and insert a link to it in the org buffer."
         "C-j"  'join-line
         "C-y"  'my-org-yank)
 
-  ;; NOTE(Felix): we gotta set org-format-latex-options here after requiring org,
-  ;;   otherwise if we use with-eval-after-load, it would only get loaded after we
-  ;;   open the first org file, which at load time would already try to latex
-  ;;   compile the fragments, before executing the `setq org-format-latex-options'
-  ;;   it seems ...
-  (require 'org)
+  (code-region "color links"
+    ;; work like this:
+    ;;   - This is [[color:green][green text]]
+    ;;   - This is [[color:red][red]]
 
-  (require 'ox-latex)
-  (add-to-list 'org-export-exclude-tags "toc")
-  (add-to-list 'org-latex-packages-alist '("" "tikz" t) t)
-  (add-to-list 'org-latex-packages-alist '("" "pgfplots" t) t)
+    (require 's)
 
-  (setq org-format-latex-options
-        '(:foreground default :background default :scale 2 :html-foreground "Black" :html-background "Transparent" :html-scale 1.0 :matchers
-          ("begin" "$1" "$" "$$" "\\(" "\\[")))
-  (setq org-preview-latex-image-directory "./images/latex/")
+    (defun color-comp (&optional arg)
+      "Completion function for color links."
+      (let ((color-data (prog2
+                            (save-selected-window
+                              (list-colors-display))
+                            (with-current-buffer (get-buffer "*Colors*")
+                              (mapcar (lambda (line)
+                                        (append (list line)
+                                                (s-split " " line t)))
+                                      (s-split "\n" (buffer-string))))
+                          (kill-buffer "*Colors*"))))
+        (format "color:%s"
+                (s-trim (cadr (assoc (completing-read "Color: " color-data) color-data))))))
+
+
+    (defun color-link-face (path)
+      "Face function for color links."
+      ;; (message path)
+      ;; (or 1 (cdr (assoc path org-link-colors))
+      `(:underline ,nil :foreground ,path))
+    ;; )
+
+
+    (defun color-link-export (path description backend)
+      "Export function for color links."
+      (cond
+       ((eq backend 'latex)                          ; added by TL
+        (format "{\\color{%s}%s}" path description)) ; added by TL
+       ((or (eq backend 'html) (eq backend 'md) (eq backend 'hugo))
+        (let ((rgb (assoc (downcase path) color-name-rgb-alist))
+              r g b)
+          (setq r (* 255 (/ (nth 1 rgb) 65535.0))
+                g (* 255 (/ (nth 2 rgb) 65535.0))
+                b (* 255 (/ (nth 3 rgb) 65535.0)))
+          (format "<span style=\"color: rgb(%s,%s,%s)\">%s</span>"
+                  (truncate r) (truncate g) (truncate b)
+                  (or description path))))))
+
+    (with-eval-after-load 'org
+      (org-link-set-parameters "color"
+                               :face     'color-link-face
+                               :complete 'color-comp
+                               :export   'color-link-export))
+
+    )
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   (code-region "Org Agenda"
@@ -966,6 +1042,13 @@ This function makes sure that dates are aligned for easy reading."
           (org-roam-update-org-id-locations)
           (org-publish-project "garden" FORCE)
 
+          ;; publish if linux and upload script exists
+          (when (not is-windows)
+            (let ((upload-script-path (concat org-hugo-base-dir "upload.sh")))
+              (if (file-exists-p upload-script-path)
+                  (progn
+                    (compilation-start upload-script-path t))
+                (message "No upload script found."))))
 
           ;; restore
           (delete-directory org-preview-latex-image-directory t)

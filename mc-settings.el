@@ -17,6 +17,7 @@
         drag-stuff-right
         forward-sexp
         kill-region
+        magit-section-toggle
         my-org-yank
         org-beginning-of-line
         org-end-of-line

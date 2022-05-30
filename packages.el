@@ -63,5 +63,7 @@
 (unpin! org-roam)
 (package! websocket)
 
+(package! dap-mode)
+
 (package! valign)
 (package! org-bullets)
