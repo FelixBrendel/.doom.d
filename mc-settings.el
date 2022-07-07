@@ -17,6 +17,7 @@
         drag-stuff-right
         forward-sexp
         kill-region
+        lsp-ui-doc--handle-mouse-movement
         magit-section-toggle
         my-org-yank
         org-beginning-of-line

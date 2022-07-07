@@ -57,7 +57,8 @@
 (package! ox-hugo)
 (package! ssh-agency)
 
-(package! kuronami-theme :recipe (:host github :repo "super3ggo/kuronami"      :files ("kuronami-theme.el")))
+(package! kuronami-theme :recipe (:host github :repo "super3ggo/kuronami" :files ("kuronami-theme.el")))
+(package! jai-mode       :recipe (:host github :repo "krig/jai-mode"      :files ("jai-mode.el")))
 
 (package! emacsql-sqlite3)
 (unpin! org-roam)
@@ -67,3 +68,6 @@
 
 (package! valign)
 (package! org-bullets)
+
+
+(package! glsl-mode)

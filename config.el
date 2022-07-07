@@ -168,8 +168,17 @@
       :unnarrowed t)
 
      ("u" "Notes for Uni")
-     ("uu" "Uni General" plain "%?" :target
-      (file+head "Uni/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :chem:\n")
+     ("uc" "Uni/Computer Architecture" plain "%?" :target
+      (file+head "Uni/Computer Architecture/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :computer-architecture:\n")
+      :unnarrowed t)
+     ("ud" "Uni/Databases" plain "%?" :target
+      (file+head "Uni/Databases/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :databases:\n")
+      :unnarrowed t)
+     ("ug" "Uni/Graphics" plain "%?" :target
+      (file+head "Uni/Graphics/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :computer-graphics:\n")
+      :unnarrowed t)
+     ("ul" "Uni/Deep Learning" plain "%?" :target
+      (file+head "Uni/Deep Learning/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :deep-learning:\n")
       :unnarrowed t)
      ("um" "Uni Math")
      ("umm" "Uni Math General" plain "%?" :target
@@ -184,15 +193,8 @@
      ("uml" "Uni Math Linear Algebra" plain "%?" :target
       (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :math:linear-algebra:\n")
       :unnarrowed t)
-
-     ("uc" "Uni/Computer Architecture" plain "%?" :target
-      (file+head "Uni/Computer Architecture/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :computer-architecture:\n")
-      :unnarrowed t)
-     ("ug" "Uni/Graphics" plain "%?" :target
-      (file+head "Uni/Graphics/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :computer-graphics:\n")
-      :unnarrowed t)
-     ("ud" "Uni/Deep Learning" plain "%?" :target
-      (file+head "Uni/Deep Learning/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :deep-learning:\n")
+     ("uu" "Uni General" plain "%?" :target
+      (file+head "Uni/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :chem:\n")
       :unnarrowed t)
 
      ("c" "Uni/Chemie" plain "%?" :target
@@ -315,7 +317,10 @@ Performs a database upgrade when required."
                                                   ((executable-find "cl")    (concat "cl bob.c /Fe:"   target-exe))
                                                   (t (error "no C compiler for bob.c found")))))
                             '("CMakeLists.txt" . "cmake -S . -B __build__ && cmake --build __build__")
-                            '("Makefile"       . "make")))
+                            '("Makefile"       . "make")
+                            '("build.jai"      . "time jai build.jai -quiet -exe app && time ./app")
+                            '("main.jai"       . "time jai main.jai -quiet -exe app && time ./app")
+                            '("first.jai"      . "time jai first.jai -quiet -exe app && time ./app")))
 
   (with-eval-after-load 'compile
     (add-to-list 'compilation-error-regexp-alist 'msbuild-error)
@@ -422,7 +427,7 @@ Performs a database upgrade when required."
       "<f1>"        '+doom-dashboard/open
       "C-r"         'org-roam-node-insert
       "C-o"         'org-roam-node-find
-      "C-#"         'comment-or-uncomment-region
+      "C-#"         'comment-line
       "M-SPC"       'change-lang
       "M-d"         'lookup-docs-for-symbol-at-point
       :leader "e" 'save-and-find-build-script-and-compile
@@ -488,8 +493,13 @@ Performs a database upgrade when required."
       (call-process "import" nil nil nil filename))
 
                                         ; insert into file if correctly taken
-    (if (file-exists-p filename)
-        (insert (concat "[[file:" filename "]]"))))
+    (when (file-exists-p filename)
+      (let ((col (current-column)))
+        (insert (concat
+                 "#+attr_org: :width 500\n"
+                 (string-pad "" col)
+                 "[[file:" filename "]]\n"))
+        (org-redisplay-inline-images))))
 
   (defun system-clipboard-contains-image-p ()
     (interactive)
@@ -641,6 +651,7 @@ Performs a database upgrade when required."
   (add-hook 'c-mode-hook    'my-c-mode-hook)
   (add-hook 'c++-mode-hook  'my-c-mode-hook)
   (add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
+  (add-hook 'compilation-mode-hook (lambda () (toggle-truncate-lines 1)))
   ;; (add-hook 'c++-mode-hook #'modern-c++-font-lock-mode)
   (add-hook 'org-mode-hook #'hl-todo-mode)
 
@@ -1056,10 +1067,31 @@ This function makes sure that dates are aligned for easy reading."
           (setq org-startup-with-latex-preview old-org-startup-with-latex-preview)
           (setq org-format-latex-options old-org-format-latex-options)
           (message "Publish Done!"))
-        ))
-    ))
+        ))))
 
+(defun search-jai-modules ()
+  (interactive)
+  (compilation-start (concat "grep \""
+                             "^[[:space:]]*"
+                             (or (when (symbol-at-point)
+                                     (symbol-name (symbol-at-point)))
+                                 (read-string "What to search in the modules? "))
+                             " :: \" -Rn "
+                             "/home/felix/jai/modules/"
+                             " | sort -u")
+                     t))
 
+(defun search-jai-how-to ()
+  (interactive)
+    (compilation-start (concat "grep \""
+                               (read-string "What to look for in the how-to? ")
+                               "\" -Rn "
+                               "/home/felix/jai/how_to/"
+                               " | sort -u")
+                       t))
+
+(map! :map jai-mode-map
+      "M-." 'search-jai-modules)
 
 (defun delete-trailing-whitespace-except-current-line ()
   (interactive)
@@ -1106,3 +1138,19 @@ This function makes sure that dates are aligned for easy reading."
 ;;             (other-window 1)))
 
 (push '(organization . organization) citeproc-blt-to-csl-standard-alist)
+
+(require 'jai-mode)
+(setq jai--error-regexp "^\\([^\n][^ :]+\\):\\([0-9]+\\),\\([0-9]+\\): \\(?:Error\\|\\(Info\\|Warning\\)\\)")
+(push `(jai ,jai--error-regexp 1 2 3 (4)) compilation-error-regexp-alist-alist)
+;;
+;; (push `(jai
+;;         "\\([A-Za-z0-9\\/.]*\\):\\([0-9]+\\),\\([0-9]+\\): \\(?:Error\\|\\(Info\\|Warning\\)\\)"
+;;         1 2 3 (4))
+;;       compilation-error-regexp-alist-alist)
+
+
+
+(push 'jai compilation-error-regexp-alist)
+(add-hook 'jai-mode-hook
+          (lambda ()
+            (setq-local fill-paragraph-function #'c-fill-paragraph)))
