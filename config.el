@@ -110,6 +110,14 @@
   :defer t)
 (use-package! valign)
 (use-package! biblio)
+(use-package! dirvish
+  :ensure t
+  :init
+  ;; Let Dirvish take over Dired globally
+  (dirvish-override-dired-mode))
+
+(use-package! ob-sql-mode :ensure t)
+(require 'ob-sql-mode)
 
 (use-package! dap-mode
   :config
@@ -756,13 +764,10 @@ in a 'images' folder and insert a link to it in the org buffer."
   (with-eval-after-load 'org
     (require 'org-tempo)
 
-    (setq org-roam-node-display-template
-          (concat "${title:*} "
-                  (propertize "${tags}" 'face 'org-tag)))
-
+    )
     ;;(add-to-list 'org-latex-packages-alist '("" "tikz" t))
     ;;(add-to-list 'org-latex-packages-alist '("" "pgfplots" t))
-    )
+
 
   (map! :map org-mode-map
         "C-r"  'org-roam-node-insert
@@ -979,6 +984,14 @@ This function makes sure that dates are aligned for easy reading."
     )
 
   (with-eval-after-load 'org-roam
+    (cl-defmethod org-roam-node-my-title ((node org-roam-node))
+      (let ((title (org-roam-node-title node)))
+        (concat (string-pad title (- (/ (frame-width) 2) 1) nil t) "  ")))
+
+    (setq org-roam-node-display-template
+          ;; (concat "${title:*}"  (propertize "${tags}" 'face 'org-tag))
+          (concat "${my-title}" (propertize "${tags}" 'face 'org-tag)))
+
     (defun org-hugo-publish (plist filename pub-dir)
       ;; (print plist)
       ;; (print filename)
@@ -1076,8 +1089,8 @@ This function makes sure that dates are aligned for easy reading."
                              (or (when (symbol-at-point)
                                      (symbol-name (symbol-at-point)))
                                  (read-string "What to search in the modules? "))
-                             " :: \" -Rn "
-                             "/home/felix/jai/modules/"
+                             "[[:space:]]\\+:: \" -Rn "
+                             "/home/felix/jai/jai/modules/"
                              " | sort -u")
                      t))
 
@@ -1086,7 +1099,7 @@ This function makes sure that dates are aligned for easy reading."
     (compilation-start (concat "grep \""
                                (read-string "What to look for in the how-to? ")
                                "\" -Rn "
-                               "/home/felix/jai/how_to/"
+                               "/home/felix/jai/jai/how_to/"
                                " | sort -u")
                        t))
 

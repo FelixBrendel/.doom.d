@@ -60,6 +60,8 @@
 (package! kuronami-theme :recipe (:host github :repo "super3ggo/kuronami" :files ("kuronami-theme.el")))
 (package! jai-mode       :recipe (:host github :repo "krig/jai-mode"      :files ("jai-mode.el")))
 
+(package! dirvish)
+
 (package! emacsql-sqlite3)
 (unpin! org-roam)
 (package! websocket)
@@ -68,6 +70,7 @@
 
 (package! valign)
 (package! org-bullets)
+(package! ob-sql-mode)
 
 
 (package! glsl-mode)
