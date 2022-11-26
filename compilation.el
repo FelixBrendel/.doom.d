@@ -55,7 +55,7 @@ source: https://stackoverflow.com/questions/24356401/how-to-append-multiple-elem
                           (if is-windows "bob.exe"           "./bob")
 
                           (cons "bob.c"   (make-c-compile-and-run-cmd "bob.c" "bob"))
-                          (cons "bob.c++" (make-c++-compile-and-run-cmd "bob.cpp" "bob"))
+                          (cons "bob.cpp" (make-c++-compile-and-run-cmd "bob.cpp" "bob"))
 
                           (cons "CMakeLists.txt"  "cmake -S . -B __build__ && cmake --build __build__")
                           (if is-windows '("build.sh" . "wsl bash -ic ./build.sh"))
@@ -65,12 +65,18 @@ source: https://stackoverflow.com/questions/24356401/how-to-append-multiple-elem
                           ;; (cons "main.c"    (make-c-compile-and-run-cmd "main.c" "main"))
                           ;; (cons "main.cpp"  (make-c++-compile-and-run-cmd "main.cpp" "main"))
                           ))
+
+(setq secondary-build-script-names
+      (list
+       (cons "main.c"    (make-c-compile-and-run-cmd "main.c" "main"))
+       (cons "main.cpp"  (make-c++-compile-and-run-cmd "main.cpp" "main"))))
+
 (if is-windows
-    (append-to-list 'build-script-names
+    (append-to-list 'secondary-build-script-names
                     (list '("build.jai"      . "jai build.jai -quiet -exe app && app")
                           '("main.jai"       . "jai main.jai -quiet -exe app && app")
                           '("first.jai"      . "jai first.jai -quiet -exe app && app")))
-  (append-to-list 'build-script-names
+  (append-to-list 'secondary-build-script-names
                   (list '("build.jai"      . "time jai build.jai -quiet -exe app && time ./app")
                         '("main.jai"       . "time jai main.jai -quiet -exe app && time ./app")
                         '("first.jai"      . "time jai first.jai -quiet -exe app && time ./app"))))
@@ -105,7 +111,7 @@ source: https://stackoverflow.com/questions/24356401/how-to-append-multiple-elem
             (longest-car-string others max-so-far max-so-far-len)))
     max-so-far))
 
-(defun find-closest-build-script ()
+(defun find-closest-build-script (build-script-list)
   (let* ((potential-paths (mapcar (lambda (build-script-name)
                                     (let ((name (if (consp build-script-name) (car build-script-name) build-script-name)))
                                       (when name ;; NOTE(Felix): name could be
@@ -116,13 +122,12 @@ source: https://stackoverflow.com/questions/24356401/how-to-append-multiple-elem
                                         (let ((path (locate-dominating-file (expand-file-name default-directory) name)))
                                           (when path
                                             (cons path name))))))
-                                  build-script-names))
+                                  build-script-list))
          (existing-paths (filter-non-nil potential-paths)))
 
     (if existing-paths
         (longest-car-string existing-paths)
-      (cons nil nil))
-    ))
+      (cons nil nil))))
 
 (cl-defun translate-build-file-to-command (file &optional (build-scrips build-script-names))
   (unless build-scrips
@@ -137,16 +142,32 @@ source: https://stackoverflow.com/questions/24356401/how-to-append-multiple-elem
       (list (lambda (&rest _)
               (compilation-minor-mode 1))))
 
+
+(defun get-build-cmd-one-list (build-script-list)
+  (let* ((path-and-script (find-closest-build-script build-script-list))
+         (path            (car path-and-script))
+         (script          (cdr path-and-script)))
+    (when path
+      (list (translate-build-file-to-command script build-script-list)
+            script
+            path))))
+
+(defun get-build-cmd ()
+  (let ((cmd (get-build-cmd-one-list build-script-names)))
+    (if cmd
+        cmd
+      (let ((cmd2 (get-build-cmd-one-list secondary-build-script-names)))
+        (if cmd2
+            cmd2
+          (error "no build files found"))))))
+
 (defun find-build-script-and-compile ()
   (interactive)
-  (let* ((path-and-script (find-closest-build-script))
-         (path   (car path-and-script))
-         (script (cdr path-and-script)))
-    (unless path
-      (error "no build files found"))
-
-    (let ((command (translate-build-file-to-command script))
-          (curr-dir default-directory))
+  (let* ((command-script-and-path (get-build-cmd))
+         (command (first  command-script-and-path))
+         (script  (second command-script-and-path))
+         (path    (third  command-script-and-path))
+         (curr-dir default-directory))
 
       (let ((actual-command-str (cond ((stringp   command) command)
                                       ((functionp command) (funcall command script))
@@ -154,7 +175,7 @@ source: https://stackoverflow.com/questions/24356401/how-to-append-multiple-elem
 
         (cd path)
         (compilation-start actual-command-str t)
-        (cd curr-dir)))))
+        (cd curr-dir))))
 
 
 (push '("^Comint \\(finished\\).*"
