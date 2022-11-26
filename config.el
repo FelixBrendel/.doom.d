@@ -31,7 +31,8 @@
 
 ;;  - [ ] org-fill-paragraph should not remove latex preview
 ;;  - [ ] knowledge base export -> .bib file
-;;  - [ ] org insert screenshot from clipboard (Linux)
+;;  - [ ] osrg insert screenshot from clipboard (Linux)
+;;  - [ ] C-s (consult-line) does not work with search text that spans multiple lines
 
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
@@ -110,6 +111,11 @@
   :defer t)
 (use-package! valign)
 (use-package! biblio)
+(use-package! yaml-mode
+  :init
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+
+
 (use-package! dirvish
   :ensure t
   :init
@@ -214,7 +220,8 @@
          ("C-c n f" . org-roam-node-find)
          ("C-c n i" . org-roam-node-insert)
          :map org-mode-map
-         ("C-M-i" . completion-at-point))
+         ("C-M-i" . completion-at-point)
+         ("<f5>" . org-redisplay-inline-images))
   :config
   ;; NOTE(Felix): hopefullly teporary fix
   (progn
@@ -293,6 +300,11 @@ Performs a database upgrade when required."
   (interactive)
     (+lookup/online (thing-at-point 'symbol) "DevDocs.io"))
 
+(defun my-lookup/definition ()
+  (interactive)
+  (when (call-interactively #'+lookup/definition)
+    (recenter-top-bottom 3)))
+
 (defun mark-word-or-next-word-like-this ()
   "if there is no active region the word under
    the point will be marked, otherwise the next word is selected."
@@ -313,113 +325,7 @@ Performs a database upgrade when required."
 
 
 (code-region "Compiling"
-  (setq is-windows (string= system-type "windows-nt"))
-  (setq build-script-names (list
-                            (if is-windows (cons "build.ps1" "powershell.exe -ExecutionPolicy Unrestricted -File build.ps1"))
-                            (if is-windows "build.bat"         "./build.sh")
-                            (if is-windows "build-windows.bat" "./build-linux.sh")
-                            (if is-windows "bob.exe"           "./bob")
-                            (cons "bob.c" (let ((target-exe (if is-windows "bob.exe" "bob")))
-                                            (cond ((executable-find "clang") (concat "clang bob.c -o " target-exe))
-                                                  ((executable-find "gcc")   (concat "gcc bob.c -o "   target-exe))
-                                                  ((executable-find "cl")    (concat "cl bob.c /Fe:"   target-exe))
-                                                  (t (error "no C compiler for bob.c found")))))
-                            '("CMakeLists.txt" . "cmake -S . -B __build__ && cmake --build __build__")
-                            '("Makefile"       . "make")
-                            '("build.jai"      . "time jai build.jai -quiet -exe app && time ./app")
-                            '("main.jai"       . "time jai main.jai -quiet -exe app && time ./app")
-                            '("first.jai"      . "time jai first.jai -quiet -exe app && time ./app")))
-
-  (with-eval-after-load 'compile
-    (add-to-list 'compilation-error-regexp-alist 'msbuild-error)
-    (add-to-list 'compilation-error-regexp-alist-alist
-                 '(msbuild-error
-                   "^\\(.*?\\)(\\([0-9]+\\),\\([0-9]+\\)): \\(?:\\(fatal \\)?error\\|\\(warning\\)\\|\\(message\\)\\) .*?:" 1 2 3 (4))))
-
-
-
-  (defun first-non-nil (l)
-    (unless (null l)
-      (if (car l)
-          (car l)
-        (first-non-nil (cdr l)))))
-
-  (defun filter-non-nil (l)
-    (unless (null l)
-      (if (car l)
-          (cons (car l) (filter-non-nil (cdr l)))
-        (filter-non-nil (cdr l)))))
-
-  (cl-defun longest-car-string (l &optional (max-so-far (cons nil nil)) (max-so-far-len 0))
-    (if l (let* ((element (caar l))
-                 (others  (cdr l))
-                 (strlen  (length element)))
-            (if (> strlen max-so-far-len)
-                (longest-car-string others (car l) strlen)
-              (longest-car-string others max-so-far max-so-far-len)))
-      max-so-far))
-
-  (defun find-closest-build-script ()
-    (let* ((potential-paths (mapcar (lambda (build-script-name)
-                                      (let ((name (if (consp build-script-name) (car build-script-name) build-script-name)))
-                                        (when name ;; NOTE(Felix): name could be
-                                                   ;; nil since this kind of
-                                                   ;; build system is not
-                                                   ;; available on this
-                                                   ;; architecture
-                                          (let ((path (locate-dominating-file (expand-file-name default-directory) name)))
-                                            (when path
-                                              (cons path name))))))
-                                    build-script-names))
-           (existing-paths (filter-non-nil potential-paths)))
-
-      (if existing-paths
-          (longest-car-string existing-paths)
-        (cons nil nil))
-      ))
-
-  (cl-defun translate-build-file-to-command (file &optional (build-scrips build-script-names))
-    (unless build-scrips
-      (error "unkown build script"))
-    (let* ((first          (car build-scrips))
-           (iter-file-name (if (consp first) (car first) first)))
-      (if (string= file iter-file-name)
-          (if (consp first) (cdr first) first)
-        (translate-build-file-to-command file (cdr build-scrips)))))
-
-  (setq compilation-finish-functions
-        (list (lambda (&rest _)
-                (compilation-minor-mode 1))))
-
-  (defun save-and-find-build-script-and-compile ()
-    (interactive)
-    (let* ((path-and-script (find-closest-build-script))
-           (path   (car path-and-script))
-           (script (cdr path-and-script)))
-      (unless path
-        (error "no build files found"))
-
-      (let ((command (translate-build-file-to-command script))
-            (curr-dir default-directory))
-
-        (cd path)
-        (compilation-start command t)
-        (cd curr-dir))))
-
-
-  (push '("^Comint \\(finished\\).*"
-          (0 '(face nil compilation-message nil help-echo nil mouse-face nil) t)
-          (1 compilation-info-face))
-        compilation-mode-font-lock-keywords)
-
-  (push '("^Comint \\(exited abnormally\\|interrupt\\|killed\\|terminated\\|segmentation fault\\)\\(?:.*with code \\([0-9]+\\)\\)?.*"
-          (0 '(face nil compilation-message nil help-echo nil mouse-face nil) t)
-          (1 compilation-error-face)
-          (2 compilation-error-face nil t))
-        compilation-mode-font-lock-keywords)
-
-  )
-
+    (load-file (concat doom-private-dir "compilation.el")))
 
 (map! :map LaTeX-mode-map
       "C-c C-e" (lambda () (interactive) (TeX-command "LaTeX" 'TeX-master-file)))
@@ -438,7 +344,7 @@ Performs a database upgrade when required."
       "C-#"         'comment-line
       "M-SPC"       'change-lang
       "M-d"         'lookup-docs-for-symbol-at-point
-      :leader "e" 'save-and-find-build-script-and-compile
+      :leader "e"   'find-build-script-and-compile
       )
 
 ;; NOTE(Felix): make C-c f p not throw errors by rebinding it
@@ -447,7 +353,8 @@ Performs a database upgrade when required."
 (unbind-key "f p" mode-specific-map)
 (map!  "C-c f p"     'doom/open-private-config)
 (map! :map global-map
-      "C-c f p" 'doom/open-private-config)
+      "C-c f p" 'doom/open-private-config
+      "M-." 'my-lookup/definition)
 
 
 (setq +doom-dashboard-menu-sections
@@ -659,7 +566,9 @@ Performs a database upgrade when required."
   (add-hook 'c-mode-hook    'my-c-mode-hook)
   (add-hook 'c++-mode-hook  'my-c-mode-hook)
   (add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
-  (add-hook 'compilation-mode-hook (lambda () (toggle-truncate-lines 1)))
+  (add-hook 'compilation-mode (lambda () (toggle-truncate-lines -1)))
+  (add-hook 'compilation-minor-mode-hook (lambda () (toggle-truncate-lines -1)))
+  (add-hook 'comint-mode-hook (lambda () (toggle-truncate-lines -1)))
   ;; (add-hook 'c++-mode-hook #'modern-c++-font-lock-mode)
   (add-hook 'org-mode-hook #'hl-todo-mode)
 
@@ -886,16 +795,17 @@ in a 'images' folder and insert a link to it in the org buffer."
     (setq org-tags-column -90)
     (setq org-log-done t)
     (setq org-agenda-category-icon-alist
-          `(("teaching" ,(list "\xf130")       nil nil :ascent center)
-            ("pizza"    ,(list (all-the-icons-material "local_pizza"))           nil nil)
-            ("coffee"   ,(list (all-the-icons-faicon "coffee"))           nil nil)
-            ("events"   ,(list (all-the-icons-faicon "calendar-check-o")) nil nil)
-            ("todo"     ,(list (all-the-icons-faicon "check"))            nil nil)
-            ("pprog"    ,(list (all-the-icons-faicon "align-left"))       nil nil)
-            ("dbsys"    ,(list (all-the-icons-faicon "table"))            nil nil)
-            ("gemji"    ,(list (all-the-icons-faicon "gamepad"))          nil nil)
-            ("mocap"    ,(list (all-the-icons-faicon "eye"))              nil nil)
-            ("uni"      ,(list (all-the-icons-faicon "graduation-cap"))   nil nil)))
+          `(("teaching"    ,(list "\xf130")       nil nil :ascent center)
+            ("pizza"       ,(list (all-the-icons-material "local_pizza"))           nil nil)
+            ("coffee"      ,(list (all-the-icons-faicon "coffee"))           nil nil)
+            ("events"      ,(list (all-the-icons-faicon "calendar-check-o")) nil nil)
+            ("geburtstage" ,(list (all-the-icons-faicon "birthday-cake"))    nil nil)
+            ("todo"        ,(list (all-the-icons-faicon "check"))            nil nil)
+            ("pprog"       ,(list (all-the-icons-faicon "align-left"))       nil nil)
+            ("dbsys"       ,(list (all-the-icons-faicon "table"))            nil nil)
+            ("gemji"       ,(list (all-the-icons-faicon "gamepad"))          nil nil)
+            ("mocap"       ,(list (all-the-icons-faicon "eye"))              nil nil)
+            ("uni"         ,(list (all-the-icons-faicon "graduation-cap"))   nil nil)))
 
     (setq org-agenda-block-separator (string-to-char " "))
     (setq org-agenda-format-date 'my-org-agenda-format-date-aligned)
@@ -1121,6 +1031,11 @@ This function makes sure that dates are aligned for easy reading."
           (delete-trailing-whitespace))))))
 (add-hook 'before-save-hook 'delete-trailing-whitespace-except-current-line)
 
+;; NOTE(Felix): by doom-default enter in comment will insert the comment
+;;   starting characters into the buffer on the next line. So I revert that
+;;   behavior.
+(advice-remove 'newline-and-indent #'+default--newline-indent-and-continue-comments-a)
+
 
 (code-region "Korean input"
   (setq lang :de)
@@ -1139,6 +1054,12 @@ This function makes sure that dates are aligned for easy reading."
       (setq lang :de)))
   )
 
+(defun show-in-explorer ()
+  (interactive)
+  (if is-windows
+      (shell-command "explorer .")
+    (shell-command "thunar .")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; startup
@@ -1153,7 +1074,7 @@ This function makes sure that dates are aligned for easy reading."
 (push '(organization . organization) citeproc-blt-to-csl-standard-alist)
 
 (require 'jai-mode)
-(setq jai--error-regexp "^\\([^\n][^ :]+\\):\\([0-9]+\\),\\([0-9]+\\): \\(?:Error\\|\\(Info\\|Warning\\)\\)")
+(setq jai--error-regexp "^\\([^\n]*[^ :]+\\):\\([0-9]+\\),\\([0-9]+\\): \\(?:Error\\|\\(Info\\|Warning\\)\\)")
 (push `(jai ,jai--error-regexp 1 2 3 (4)) compilation-error-regexp-alist-alist)
 ;;
 ;; (push `(jai
