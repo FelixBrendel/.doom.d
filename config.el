@@ -611,6 +611,15 @@ in a 'images' folder and insert a link to it in the org buffer."
   ;;   it seems ...
   (require 'org)
   (require 'ox-latex)
+  (with-eval-after-load "ox-latex"
+    (add-to-list 'org-latex-classes
+                 '("scrreprt" "\\documentclass{scrreprt}"
+                   ("\\section{%s}" . "\\section*{%s}")
+                   ("\\subsection{%s}" . "\\subsection*{%s}")
+                   ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                   ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                   ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+  (setq org-cite-global-bibliography (list (expand-file-name "~/org/bib.bib")))
   (add-to-list 'org-export-exclude-tags "toc")
   (add-to-list 'org-latex-packages-alist '("" "tikz" t) t)
   (add-to-list 'org-latex-packages-alist '("" "pgfplots" t) t)
