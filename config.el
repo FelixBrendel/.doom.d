@@ -28,10 +28,10 @@
 ;;  - [X] undo can't be undone
 ;;  - [X] fixed latex header for previews (use #+latex_header_extra: to exclude from previews)
 ;;  - [X] C-j does not work in org
+;;  - [X] knowledge base export -> .bib file
 
 ;;  - [ ] org-fill-paragraph should not remove latex preview
-;;  - [ ] knowledge base export -> .bib file
-;;  - [ ] osrg insert screenshot from clipboard (Linux)
+;;  - [ ] org insert screenshot from clipboard (Linux)
 ;;  - [ ] C-s (consult-line) does not work with search text that spans multiple lines
 
 
@@ -55,6 +55,8 @@
 ;;       doom-variable-pitch-font (font-spec :family "sans" :size 13))
 (setq doom-font (font-spec :name "noto sans mono" :size 12.0)
       doom-modeline-major-mode-icon t)
+
+(prefer-coding-system 'utf-8)
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
@@ -110,6 +112,9 @@
 (use-package! ssh-agency
   :defer t)
 (use-package! valign)
+(use-package! form-feed
+  :hook (prog-mode . form-feed-mode))
+
 (use-package! biblio)
 (use-package! yaml-mode
   :init
@@ -894,6 +899,150 @@ This function makes sure that dates are aligned for easy reading."
                                         " . . ." "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"))))))))
     )
   )
+
+(code-region "Org gardentangle"
+  (setq tangle-bib-file "~/org/tangle.bib")
+
+  (defun my-org-babel-tangle-append (&optional arg target-file lang-re)
+    "Hard copy of `org-babel-tangle' with the difference-of
+appending to the tangled file instead of overwriting it. Before
+hard-copying this here, I tried to flet the delete-file, which
+worked but still write-region does delete first if an optional
+arg is not set, and I don't know how I can make the original
+`org-babel-tangle' pass that arg from outside.. So here we are"
+    (interactive "P")
+    (run-hooks 'org-babel-pre-tangle-hook)
+    ;; Possibly Restrict the buffer to the current code block
+    (save-restriction
+      (save-excursion
+        (when (equal arg '(4))
+          (let ((head (org-babel-where-is-src-block-head)))
+            (if head
+                (goto-char head)
+              (user-error "Point is not in a source code block"))))
+        (let ((block-counter 0)
+              (org-babel-default-header-args
+               (if target-file
+                   (org-babel-merge-params org-babel-default-header-args
+                                           (list (cons :tangle target-file)))
+                 org-babel-default-header-args))
+              (tangle-file
+               (when (equal arg '(16))
+                 (or (cdr (assq :tangle (nth 2 (org-babel-get-src-block-info 'light))))
+                     (user-error "Point is not in a source code block"))))
+              path-collector)
+          (mapc ;; map over file-names
+           (lambda (by-fn)
+             (let ((file-name (car by-fn)))
+               (when file-name
+                 (let ((lspecs (cdr by-fn))
+                       (fnd (file-name-directory file-name))
+                       modes make-dir she-banged lang)
+                   ;; drop source-blocks to file
+                   ;; We avoid append-to-file as it does not work with tramp.
+                   (with-temp-buffer
+                     (mapc
+                      (lambda (lspec)
+                        (let* ((block-lang (car lspec))
+                               (spec (cdr lspec))
+                               (get-spec (lambda (name) (cdr (assq name (nth 4 spec)))))
+                               (she-bang (let ((sheb (funcall get-spec :shebang)))
+                                           (when (> (length sheb) 0) sheb)))
+                               (tangle-mode (funcall get-spec :tangle-mode)))
+                          (unless (string-equal block-lang lang)
+                            (setq lang block-lang)
+                            (let ((lang-f (org-src-get-lang-mode lang)))
+                              (when (fboundp lang-f) (ignore-errors (funcall lang-f)))))
+                          ;; if file contains she-bangs, then make it executable
+                          (when she-bang
+                            (unless tangle-mode (setq tangle-mode #o755)))
+                          (when tangle-mode
+                            (add-to-list 'modes (org-babel-interpret-file-mode tangle-mode)))
+                          ;; Possibly create the parent directories for file.
+                          (let ((m (funcall get-spec :mkdirp)))
+                            (and m fnd (not (string= m "no"))
+                                 (setq make-dir t)))
+                          ;; Handle :padlines unless first line in file
+                          (unless (or (string= "no" (funcall get-spec :padline))
+                                      (= (point) (point-min)))
+                            (insert "\n"))
+                          (when (and she-bang (not she-banged))
+                            (insert (concat she-bang "\n"))
+                            (setq she-banged t))
+                          (org-babel-spec-to-string spec)
+                          (setq block-counter (+ 1 block-counter))))
+                      lspecs)
+                     (when make-dir
+                       (make-directory fnd 'parents))
+                     ;; erase previous file
+                     ;; (when (file-exists-p file-name)
+                     ;; (delete-file file-name))
+                     (write-region nil nil file-name t)
+                     (mapc (lambda (mode) (set-file-modes file-name mode)) modes)
+                     (push file-name path-collector))))))
+           (if (equal arg '(4))
+               (org-babel-tangle-single-block 1 t)
+             (org-babel-tangle-collect-blocks lang-re tangle-file)))
+          (message "Tangled %d code block%s from %s" block-counter
+                   (if (= block-counter 1) "" "s")
+                   (file-name-nondirectory
+                    (buffer-file-name
+                     (or (buffer-base-buffer)
+                         (current-buffer)
+                         (and (org-src-edit-buffer-p)
+                              (org-src-source-buffer))))))
+          ;; run `org-babel-post-tangle-hook' in all tangled files
+          (when org-babel-post-tangle-hook
+            (mapc
+             (lambda (file)
+               (org-babel-with-temp-filebuffer file
+                 (run-hooks 'org-babel-post-tangle-hook)))
+             path-collector))
+          path-collector))))
+
+  (defun my-org-babel-tangle-publish (_ filename pub-dir)
+    (let* ((visited (find-buffer-visiting filename))
+           (buffer (or visited (find-file-noselect filename))))
+      (prog1
+          (with-current-buffer buffer
+            (org-with-wide-buffer
+             (my-org-babel-tangle-append nil (expand-file-name tangle-bib-file) "bibtex"))))
+      (unless visited (kill-buffer buffer))))
+
+
+  (defun my-org-tangle-this-file ()
+    (interactive)
+
+    (let ((this-file (expand-file-name (buffer-file-name))))
+      (my-org-babel-tangle-publish nil this-file
+                                   (expand-file-name "~/org/"))
+      ))
+
+  (defun publish-garden-bib (&optional FORCE)
+    (interactive)
+    (setq org-publish-project-alist
+          `(("garden-bib"
+             :base-directory ,org-roam-directory
+             :base-extension "org"
+             :publishing-directory ,(expand-file-name "~/org/")
+             :recursive t
+             :publishing-function my-org-babel-tangle-publish
+             :auto-preamble t
+             )))
+
+
+    (when (file-exists-p tangle-bib-file)
+      (delete-file tangle-bib-file))
+
+    (let ((old-org-startup-with-latex-preview org-startup-with-latex-preview))
+      (setq org-startup-with-latex-preview nil)
+
+      ;; do
+      (org-publish-project "garden-bib" FORCE)
+
+      ;; restore
+      (setq org-startup-with-latex-preview old-org-startup-with-latex-preview)))
+)
 
 (code-region "Org publish stuff for garden"
   (require 'ox-publish)

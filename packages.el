@@ -58,6 +58,7 @@
 (package! ssh-agency)
 
 (package! yaml-mode)
+(package! form-feed)
 
 (package! kuronami-theme :recipe (:host github :repo "super3ggo/kuronami" :files ("kuronami-theme.el")))
 (package! jai-mode       :recipe (:host github :repo "krig/jai-mode"      :files ("jai-mode.el")))
