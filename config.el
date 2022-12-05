@@ -617,14 +617,17 @@ in a 'images' folder and insert a link to it in the org buffer."
   (require 'org)
   (require 'ox-latex)
   (with-eval-after-load "ox-latex"
+    (setq org-latex-listings 'minted)
     (add-to-list 'org-latex-classes
                  '("scrreprt" "\\documentclass{scrreprt}"
+                   ("\\chapter{%s}" . "\\chapter*{%s}")
                    ("\\section{%s}" . "\\section*{%s}")
                    ("\\subsection{%s}" . "\\subsection*{%s}")
                    ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
                    ("\\paragraph{%s}" . "\\paragraph*{%s}")
                    ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
-  (setq org-cite-global-bibliography (list (expand-file-name "~/org/bib.bib")))
+  (setq org-cite-global-bibliography (list (expand-file-name "~/org/bib.bib")
+                                           (expand-file-name "~/org/vault.bib")))
   (add-to-list 'org-export-exclude-tags "toc")
   (add-to-list 'org-latex-packages-alist '("" "tikz" t) t)
   (add-to-list 'org-latex-packages-alist '("" "pgfplots" t) t)
@@ -901,7 +904,7 @@ This function makes sure that dates are aligned for easy reading."
   )
 
 (code-region "Org gardentangle"
-  (setq tangle-bib-file "~/org/tangle.bib")
+  (setq tangle-bib-file "~/org/vault.bib")
 
   (defun my-org-babel-tangle-append (&optional arg target-file lang-re)
     "Hard copy of `org-babel-tangle' with the difference-of
