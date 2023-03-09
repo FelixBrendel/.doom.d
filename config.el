@@ -587,6 +587,38 @@
    '(("\\<\\(defer\\|if_debug\\|panic_if\\|panic\\)\\>" . font-lock-keyword-face)))
   )
 
+(code-region "remedybg"
+  (defun get-pid-of-process-name (pids name)
+    (when pids
+      (if (string= (alist-get 'comm (process-attributes (car pids)))
+                   name)
+          (car pids)
+        (get-pid-of-process-name (cdr pids) name))))
+
+  (defun system-process-running-p (name)
+    (let ((pids (list-system-processes)))
+      (and (get-pid-of-process-name pids name) t)))
+
+  (defun rbd-break-here ()
+    (interactive)
+    (when (buffer-file-name)
+      (unless (system-process-running-p "remedybg.exe")
+        (async-shell-command "remedybg.exe" "rmd open")
+        (sleep-for 1))
+
+      (shell-command (concat "remedybg.exe open-file "
+                                   (buffer-file-name)
+                                   " "
+                                   (format "%d" (line-number-at-pos))))
+
+      (shell-command (concat "remedybg.exe add-breakpoint-at-file "
+                                   (buffer-file-name)
+                                   " "
+                                   (format "%d" (line-number-at-pos)))
+                           "rmd openfile")
+      ))
+  )
+
 (code-region "Org config"
   (use-package citar
     :no-require
@@ -661,6 +693,14 @@ in a 'images' folder and insert a link to it in the org buffer."
   (require 'ox-latex)
   (add-to-list 'org-latex-classes
                '("scrreprt" "\\documentclass{scrreprt}"
+                 ("\\chapter{%s}" . "\\chapter*{%s}")
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+  (add-to-list 'org-latex-classes
+               '("scrbook" "\\documentclass{scrbook}"
                  ("\\chapter{%s}" . "\\chapter*{%s}")
                  ("\\section{%s}" . "\\section*{%s}")
                  ("\\subsection{%s}" . "\\subsection*{%s}")
@@ -949,8 +989,17 @@ This function makes sure that dates are aligned for easy reading."
   )
 
 (code-region "Org gardentangle"
-  (setq tangle-bib-file "~/org/vault.bib")
 
+
+  ;; (defun my-org-tangle-this-file ()
+    ;; (interactive)
+
+    ;; (let ((this-file (expand-file-name (buffer-file-name))))
+      ;; (my-org-babel-tangle-publish nil this-file
+                                   ;; (expand-file-name "~/org/"))
+      ;; ))
+
+  (setq tangle-bib-file "~/org/vault.bib")
   (defun my-org-babel-tangle-append (&optional arg target-file lang-re)
     "Hard copy of `org-babel-tangle' with the difference-of
 appending to the tangled file instead of overwriting it. Before
@@ -1057,14 +1106,6 @@ arg is not set, and I don't know how I can make the original
              (my-org-babel-tangle-append nil (expand-file-name tangle-bib-file) "bibtex"))))
       (unless visited (kill-buffer buffer))))
 
-
-  (defun my-org-tangle-this-file ()
-    (interactive)
-
-    (let ((this-file (expand-file-name (buffer-file-name))))
-      (my-org-babel-tangle-publish nil this-file
-                                   (expand-file-name "~/org/"))
-      ))
 
   (defun publish-garden-bib (&optional FORCE)
     (interactive)

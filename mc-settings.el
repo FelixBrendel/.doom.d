@@ -17,17 +17,28 @@
         doom/forward-to-last-non-comment-or-eol
         drag-stuff-right
         forward-sexp
+        ignore
         kill-region
         lsp-ui-doc--handle-mouse-movement
         magit-section-toggle
         my-org-yank
         org-beginning-of-line
+        org-cycle
         org-end-of-line
+        org-force-self-insert
+        org-kill-line
         org-self-insert-command
+        scroll-right
+        wdired--self-insert
         ))
 
 (setq mc/cmds-to-run-once
       '(
+        beginning-of-buffer
         consult-line
+        find-build-script-and-compile
+        indent-for-tab-command
         mark-word-or-next-word-like-this
+        org-export-dispatch
+        shell-command
         ))
