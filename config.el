@@ -109,17 +109,17 @@
 (use-package! company-posframe
   :config
   (company-posframe-mode 1))
-(use-package! ssh-agency
-  :defer t)
+(use-package! ssh-agency :defer t)
 (use-package! valign)
+(use-package! org-preview)
+
 (use-package! form-feed
   :hook (prog-mode . form-feed-mode))
 
 (use-package! biblio)
-(use-package! yaml-mode
-  :init
-  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
-
+;; (use-package! yaml-mode
+;;   :init
+;;   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 
 (use-package! dirvish
   :ensure t
@@ -305,6 +305,14 @@ Performs a database upgrade when required."
   (interactive)
     (+lookup/online (thing-at-point 'symbol) "DevDocs.io"))
 
+(defun lookup/definition-other-window ()
+  (interactive)
+  (delete-other-windows)
+  (split-window-right)
+  (other-window 1)
+  (my-lookup/definition)
+  (other-window 1))
+
 (defun my-lookup/definition ()
   (interactive)
   (when (call-interactively #'+lookup/definition)
@@ -359,7 +367,7 @@ Performs a database upgrade when required."
 (map!  "C-c f p"     'doom/open-private-config)
 (map! :map global-map
       "C-c f p" 'doom/open-private-config
-      "M-." 'my-lookup/definition)
+      "M-." 'lookup/definition-other-window)
 
 
 (setq +doom-dashboard-menu-sections
@@ -1235,6 +1243,8 @@ arg is not set, and I don't know how I can make the original
 (push '(organization . organization) citeproc-blt-to-csl-standard-alist)
 
 (require 'jai-mode)
+(require 'org-preview)
+
 (setq jai--error-regexp "^\\([^\n]*[^ :]+\\):\\([0-9]+\\),\\([0-9]+\\): \\(?:Error\\|\\(Info\\|Warning\\)\\)")
 (push `(jai ,jai--error-regexp 1 2 3 (4)) compilation-error-regexp-alist-alist)
 ;;
