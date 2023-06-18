@@ -67,7 +67,8 @@
 
 (package! dirvish)
 
-(package! emacsql-sqlite3)
+(package! org-roam-timestamps)
+
 (unpin! org-roam)
 (package! websocket)
 

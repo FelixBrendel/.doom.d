@@ -62,6 +62,7 @@ source: https://stackoverflow.com/questions/24356401/how-to-append-multiple-elem
                           (if is-windows
                               '("Makefile" . "wsl make")
                             '("Makefile"       . "make"))
+                          (cons "main.py" "python main.py")
                           ;; (cons "main.c"    (make-c-compile-and-run-cmd "main.c" "main"))
                           ;; (cons "main.cpp"  (make-c++-compile-and-run-cmd "main.cpp" "main"))
                           ))

@@ -29,8 +29,8 @@
 ;;  - [X] fixed latex header for previews (use #+latex_header_extra: to exclude from previews)
 ;;  - [X] C-j does not work in org
 ;;  - [X] knowledge base export -> .bib file
+;;  - [X] org-fill-paragraph should not remove latex preview
 
-;;  - [ ] org-fill-paragraph should not remove latex preview
 ;;  - [ ] org insert screenshot from clipboard (Linux)
 ;;  - [ ] C-s (consult-line) does not work with search text that spans multiple lines
 
@@ -114,12 +114,18 @@
 (use-package! org-preview)
 
 (use-package! form-feed
-  :hook (prog-mode . form-feed-mode))
+  :hook (prog-mode . form-feed-mode)
+        (org-mode . form-feed-mode))
 
 (use-package! biblio)
-;; (use-package! yaml-mode
-;;   :init
-;;   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+
+(use-package! org-roam-timestamps
+  :hook (org-mode . org-roam-timestamps-mode))
+
+(use-package! yaml-mode
+  :init
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+
 
 (use-package! dirvish
   :ensure t
@@ -229,49 +235,49 @@
          ("<f5>" . org-redisplay-inline-images))
   :config
   ;; NOTE(Felix): hopefullly teporary fix
-  (progn
-    (require 'emacsql-sqlite3)
-    (defun org-roam-db ()
-      "Entrypoint to the Org-roam sqlite database.
-Initializes and stores the database, and the database connection.
-Performs a database upgrade when required."
-      (unless (and (org-roam-db--get-connection)
-                   (emacsql-live-p (org-roam-db--get-connection)))
-        (let ((init-db (not (file-exists-p org-roam-db-location))))
-          (make-directory (file-name-directory org-roam-db-location) t)
-          ;; (let ((conn (emacsql-sqlite org-roam-db-location)))
-          (let ((conn (emacsql-sqlite3 org-roam-db-location)))
-            (emacsql conn [:pragma (= foreign_keys ON)])
-            (set-process-query-on-exit-flag (emacsql-process conn) nil)
-            (puthash (expand-file-name org-roam-directory)
-                     conn
-                     org-roam-db--connection)
-            (when init-db
-              (org-roam-db--init conn))
-            (let* ((version (caar (emacsql conn "PRAGMA user_version")))
-                   (version (org-roam-db--upgrade-maybe conn version)))
-              (cond
-               ((> version org-roam-db-version)
-                (emacsql-close conn)
-                (user-error
-                 "The Org-roam database was created with a newer Org-roam version.  "
-                 "You need to update the Org-roam package"))
-               ((< version org-roam-db-version)
-                (emacsql-close conn)
-                (error "BUG: The Org-roam database scheme changed %s"
-                       "and there is no upgrade path")))))))
-      (org-roam-db--get-connection))
-    (defun org-roam-db--init (db)
-      "Initialize database DB with the correct schema and user version."
-      (emacsql-with-transaction db
-        ;; (emacsql db "PRAGMA foreign_keys = ON")
-        (emacsql db [:pragma (= foreign_keys ON)])
-        (pcase-dolist (`(,table ,schema) org-roam-db--table-schemata)
-          (emacsql db [:create-table $i1 $S2] table schema))
-        (pcase-dolist (`(,index-name ,table ,columns) org-roam-db--table-indices)
-          (emacsql db [:create-index $i1 :on $i2 $S3] index-name table columns))
-        (emacsql db (format "PRAGMA user_version = %s" org-roam-db-version))))
-    )
+;;   (progn
+;;     (require 'emacsql-sqlite3)
+;;     (defun org-roam-db ()
+;;       "Entrypoint to the Org-roam sqlite database.
+;; Initializes and stores the database, and the database connection.
+;; Performs a database upgrade when required."
+;;       (unless (and (org-roam-db--get-connection)
+;;                    (emacsql-live-p (org-roam-db--get-connection)))
+;;         (let ((init-db (not (file-exists-p org-roam-db-location))))
+;;           (make-directory (file-name-directory org-roam-db-location) t)
+;;           ;; (let ((conn (emacsql-sqlite org-roam-db-location)))
+;;           (let ((conn (emacsql-sqlite3 org-roam-db-location)))
+;;             (emacsql conn [:pragma (= foreign_keys ON)])
+;;             (set-process-query-on-exit-flag (emacsql-process conn) nil)
+;;             (puthash (expand-file-name org-roam-directory)
+;;                      conn
+;;                      org-roam-db--connection)
+;;             (when init-db
+;;               (org-roam-db--init conn))
+;;             (let* ((version (caar (emacsql conn "PRAGMA user_version")))
+;;                    (version (org-roam-db--upgrade-maybe conn version)))
+;;               (cond
+;;                ((> version org-roam-db-version)
+;;                 (emacsql-close conn)
+;;                 (user-error
+;;                  "The Org-roam database was created with a newer Org-roam version.  "
+;;                  "You need to update the Org-roam package"))
+;;                ((< version org-roam-db-version)
+;;                 (emacsql-close conn)
+;;                 (error "BUG: The Org-roam database scheme changed %s"
+;;                        "and there is no upgrade path")))))))
+;;       (org-roam-db--get-connection))
+;;     (defun org-roam-db--init (db)
+;;       "Initialize database DB with the correct schema and user version."
+;;       (emacsql-with-transaction db
+;;         ;; (emacsql db "PRAGMA foreign_keys = ON")
+;;         (emacsql db [:pragma (= foreign_keys ON)])
+;;         (pcase-dolist (`(,table ,schema) org-roam-db--table-schemata)
+;;           (emacsql db [:create-table $i1 $S2] table schema))
+;;         (pcase-dolist (`(,index-name ,table ,columns) org-roam-db--table-indices)
+;;           (emacsql db [:create-index $i1 :on $i2 $S3] index-name table columns))
+;;         (emacsql db (format "PRAGMA user_version = %s" org-roam-db-version))))
+;;     )
 
   (org-roam-setup))
 
@@ -590,10 +596,80 @@ Performs a database upgrade when required."
    '(("\\<\\(defer\\|if_debug\\|panic_if\\|panic\\)\\>" . font-lock-keyword-face)))
   )
 
+(code-region "remedybg"
+  (defun get-pid-of-process-name (pids name)
+    (when pids
+      (if (string= (alist-get 'comm (process-attributes (car pids)))
+                   name)
+          (car pids)
+        (get-pid-of-process-name (cdr pids) name))))
+
+  (defun system-process-running-p (name)
+    (let ((pids (list-system-processes)))
+      (and (get-pid-of-process-name pids name) t)))
+
+  (defun rbd-break-here ()
+    (interactive)
+    (when (buffer-file-name)
+      (unless (system-process-running-p "remedybg.exe")
+        (async-shell-command "remedybg.exe" "rmd open")
+        (sleep-for 1))
+
+      (shell-command (concat "remedybg.exe open-file "
+                                   (buffer-file-name)
+                                   " "
+                                   (format "%d" (line-number-at-pos))))
+
+      (shell-command (concat "remedybg.exe add-breakpoint-at-file "
+                                   (buffer-file-name)
+                                   " "
+                                   (format "%d" (line-number-at-pos)))
+                           "rmd openfile")
+      ))
+  )
+
 (code-region "Org config"
+  (use-package citar
+    :no-require
+    :custom
+    (org-cite-global-bibliography
+     (list (expand-file-name "~/org/bib.bib")
+           (expand-file-name "~/org/vault.bib")))
+    (org-cite-insert-processor 'citar)
+    (org-cite-follow-processor 'citar)
+    (org-cite-activate-processor 'citar)
+    (citar-bibliography org-cite-global-bibliography)
+    ;; optional: org-cite-insert is also bound to C-c C-x C-@
+    :bind
+    (:map org-mode-map :package org ("C-c b" . #'org-cite-insert))
+    )
+
+  (setq citar-symbols
+      `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
+        (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
+        (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " ")))
+  (setq citar-symbol-separator "  ")
+  (setq citar-org-roam-mode t)
+  (setq citar-notes-source 'citar-org-roam)
+  (setq citar-templates
+   '((main . "${title:48}     ${date year issued:4}     ${author editor:30}")
+     (suffix . "          ${=key= id:15}    ${=type=:12}    ${tags keywords keywords:*}")
+     (preview . "${author editor} (${year issued date}) ${title}, ${journal journaltitle publisher container-title collection-title}.
+")
+     (note . "Notes on ${author editor}, ${title}")))
+
   (defun my-org-f2 ()
     (interactive)
     (org-toggle-latex-fragment))
+
+  (defun my-org-fill-paragraph ()
+    (interactive)
+    (org-fill-paragraph)
+    (save-excursion
+      (when org-startup-with-latex-preview
+        (mark-paragraph)
+        (org-toggle-latex-fragment)
+        )))
 
   (defun my-org-yank (&optional arg)
     "If the clipboard contains an image then write it to disk
@@ -624,18 +700,26 @@ in a 'images' folder and insert a link to it in the org buffer."
   ;;   it seems ...
   (require 'org)
   (require 'ox-latex)
-  (with-eval-after-load "ox-latex"
-    (setq org-latex-listings 'minted)
-    (add-to-list 'org-latex-classes
-                 '("scrreprt" "\\documentclass{scrreprt}"
-                   ("\\chapter{%s}" . "\\chapter*{%s}")
-                   ("\\section{%s}" . "\\section*{%s}")
-                   ("\\subsection{%s}" . "\\subsection*{%s}")
-                   ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-                   ("\\paragraph{%s}" . "\\paragraph*{%s}")
-                   ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
-  (setq org-cite-global-bibliography (list (expand-file-name "~/org/bib.bib")
-                                           (expand-file-name "~/org/vault.bib")))
+  (add-to-list 'org-latex-classes
+               '("scrreprt" "\\documentclass{scrreprt}"
+                 ("\\chapter{%s}" . "\\chapter*{%s}")
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+  (add-to-list 'org-latex-classes
+               '("scrbook" "\\documentclass{scrbook}"
+                 ("\\chapter{%s}" . "\\chapter*{%s}")
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+
+  ;; (setq org-cite-global-bibliography )
+  ;; (setq citar-bibliography org-cite-global-bibliography)
+
   (add-to-list 'org-export-exclude-tags "toc")
   (add-to-list 'org-latex-packages-alist '("" "tikz" t) t)
   (add-to-list 'org-latex-packages-alist '("" "pgfplots" t) t)
@@ -652,7 +736,8 @@ in a 'images' folder and insert a link to it in the org buffer."
         org-highlight-latex-and-related '(latex)
         org-html-with-latex 'dvisvgm
         org-latex-caption-above '(table src-block)
-        org-latex-listings t
+        ;; org-latex-listings t
+        org-latex-src-block-backend 'minted
         org-latex-listings-options '(("captionpos" "t"))
         org-startup-with-inline-images t
         org-startup-with-latex-preview t
@@ -706,7 +791,8 @@ in a 'images' folder and insert a link to it in the org buffer."
   (map! :map org-mode-map
         "C-r"  'org-roam-node-insert
         "C-j"  'join-line
-        "C-y"  'my-org-yank)
+        "C-y"  'my-org-yank
+        "M-q"  'my-org-fill-paragraph)
 
   (code-region "color links"
     ;; work like this:
@@ -912,8 +998,17 @@ This function makes sure that dates are aligned for easy reading."
   )
 
 (code-region "Org gardentangle"
-  (setq tangle-bib-file "~/org/vault.bib")
 
+
+  ;; (defun my-org-tangle-this-file ()
+    ;; (interactive)
+
+    ;; (let ((this-file (expand-file-name (buffer-file-name))))
+      ;; (my-org-babel-tangle-publish nil this-file
+                                   ;; (expand-file-name "~/org/"))
+      ;; ))
+
+  (setq tangle-bib-file "~/org/vault.bib")
   (defun my-org-babel-tangle-append (&optional arg target-file lang-re)
     "Hard copy of `org-babel-tangle' with the difference-of
 appending to the tangled file instead of overwriting it. Before
@@ -1021,14 +1116,6 @@ arg is not set, and I don't know how I can make the original
       (unless visited (kill-buffer buffer))))
 
 
-  (defun my-org-tangle-this-file ()
-    (interactive)
-
-    (let ((this-file (expand-file-name (buffer-file-name))))
-      (my-org-babel-tangle-publish nil this-file
-                                   (expand-file-name "~/org/"))
-      ))
-
   (defun publish-garden-bib (&optional FORCE)
     (interactive)
     (setq org-publish-project-alist
@@ -1052,8 +1139,7 @@ arg is not set, and I don't know how I can make the original
       (org-publish-project "garden-bib" FORCE)
 
       ;; restore
-      (setq org-startup-with-latex-preview old-org-startup-with-latex-preview)))
-)
+      (setq org-startup-with-latex-preview old-org-startup-with-latex-preview))))
 
 (code-region "Org publish stuff for garden"
   (require 'ox-publish)
