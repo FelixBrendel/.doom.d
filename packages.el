@@ -56,6 +56,7 @@
 (package! biblio)
 (package! ox-hugo)
 (package! ssh-agency)
+(package! csharp-mode)
 
 (package! yaml-mode)
 (package! form-feed)
@@ -64,17 +65,26 @@
 (package! jai-mode       :recipe (:host github :repo "krig/jai-mode"      :files ("jai-mode.el")))
 
 (package! dirvish)
+(package! rg)
+(package! flycheck) ;; for inline error messages from lsp
 
 (package! org-roam-timestamps)
+(package! citar-org-roam)
 
 (unpin! org-roam)
 (package! websocket)
 
 (package! dap-mode)
+(package! orderless)
+
+(package! emacsql-sqlite3)
+(package! sqlite)
 
 (package! valign)
 (package! org-bullets)
 (package! ob-sql-mode)
-
+(package! ox-twbs)
+(package! sly)
 
 (package! glsl-mode)
+(package! jupyter)

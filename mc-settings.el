@@ -16,11 +16,14 @@
         doom/backward-to-bol-or-indent
         doom/forward-to-last-non-comment-or-eol
         drag-stuff-right
+        drag-stuff-up
         forward-sexp
         ignore
         kill-region
+        kill-visual-line
         lsp-ui-doc--handle-mouse-movement
         magit-section-toggle
+        markdown-outdent-or-delete
         my-org-yank
         org-beginning-of-line
         org-cycle
@@ -35,10 +38,18 @@
 (setq mc/cmds-to-run-once
       '(
         beginning-of-buffer
+        consult-goto-line
         consult-line
+        dired-previous-line
+        duplicate-line
         find-build-script-and-compile
         indent-for-tab-command
+        lookup-docs-for-symbol-at-point
         mark-word-or-next-word-like-this
+        mc--insert-letter-and-increase
+        mc--insert-number-and-increase
         org-export-dispatch
+        org-roam-node-find
         shell-command
+        wdired-finish-edit
         ))

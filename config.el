@@ -58,11 +58,25 @@
 
 (prefer-coding-system 'utf-8)
 
+(set-selection-coding-system
+ (if (eq system-type 'windows-nt)
+     'utf-16-le  ;; https://rufflewind.com/2014-07-20/pasting-unicode-in-emacs-on-windows
+   'utf-8))
+
+
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 ;; (setq doom-theme 'doom-nord)
 (setq doom-theme 'doom-nova)
+
+(use-package! sqlite)
+(use-package! sly)
+(use-package! rg)
+(use-package! flycheck)
+(use-package! jupyter)
+(use-package! csharp-mode)
+
 
 (use-package! neotree
   :custom
@@ -106,6 +120,10 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
+(use-package! citar-org-roam
+  :after  (citar org-roam)
+  :config (citar-org-roam-mode))
+
 (use-package! company-posframe
   :config
   (company-posframe-mode 1))
@@ -125,6 +143,12 @@
   :init
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 
+
+(use-package! orderless
+  :init
+  (setq completion-styles '(substring orderless)
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles . (partial-completion))))))
 
 (use-package! dirvish
   :ensure t
@@ -180,15 +204,18 @@
      ("k" "Korean" plain "%?" :target
       (file+head "Korean/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :korean:\n")
       :unnarrowed t)
-     ("a" "Notes for APIs")
-     ("aw" "Win32 API" plain "%?" :target
-      (file+head "APIs/win32/${slug}.org" "#+title: [win32] ${title}\n#+date: %<%F>\n#+filetags: :win32:\n")
+     ("p" "Notes for Programming things")
+     ("pw" "Win32 API" plain "%?" :target
+      (file+head "Programming/win32/${slug}.org" "#+title: [win32] ${title}\n#+date: %<%F>\n#+filetags: :win32:\n")
       :unnarrowed t)
-     ("av" "Vulkan API" plain "%?" :target
-      (file+head "APIs/vulkan/${slug}.org" "#+title: [vk] ${title}\n#+date: %<%F>\n#+filetags: :vulkan:\n")
+     ("pv" "Vulkan API" plain "%?" :target
+      (file+head "Programming/vulkan/${slug}.org" "#+title: [vk] ${title}\n#+date: %<%F>\n#+filetags: :vulkan:\n")
       :unnarrowed t)
-     ("ag" "OpenGL" plain "%?" :target
-      (file+head "APIs/opengl/${slug}.org" "#+title: [gl] ${title}\n#+date: %<%F>\n#+filetags: :opengl:\n")
+     ("pg" "OpenGL" plain "%?" :target
+      (file+head "Programming/opengl/${slug}.org" "#+title: [gl] ${title}\n#+date: %<%F>\n#+filetags: :opengl:\n")
+      :unnarrowed t)
+     ("pj" "jai" plain "%?" :target
+      (file+head "Programming/jai/${slug}.org" "#+title: [jai] ${title}\n#+date: %<%F>\n#+filetags: :jai:\n")
       :unnarrowed t)
 
      ("u" "Notes for Uni")
@@ -200,6 +227,9 @@
       :unnarrowed t)
      ("ug" "Uni/Graphics" plain "%?" :target
       (file+head "Uni/Graphics/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :computer-graphics:\n")
+      :unnarrowed t)
+     ("uq" "Uni/Quantum Computing" plain "%?" :target
+      (file+head "Uni/Quantum Computing/${slug}.org" "#+latex_header: \\usepackage{qcircuit}\n#+latex_header: \\usepackage{braket}\n#+title: ${title}\n#+date: %<%F>\n#+filetags: :quantum-computing:\n")
       :unnarrowed t)
      ("ul" "Uni/Deep Learning" plain "%?" :target
       (file+head "Uni/Deep Learning/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :deep-learning:\n")
@@ -231,7 +261,7 @@
          ("C-c n i" . org-roam-node-insert)
          :map org-mode-map
          ("C-M-i" . completion-at-point)
-         ("<f5>" . org-redisplay-inline-images))
+         ("<f5>"  . org-redisplay-inline-images))
   :config
   ;; NOTE(Felix): hopefullly teporary fix
 ;;   (progn
@@ -292,28 +322,71 @@
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
 
-(defun duplicate-line()
-  (interactive)
-  (let ((inhibit-message 1))
-  (save-excursion
-    (move-beginning-of-line 1)
-    (set-mark (point-marker))
-    (move-end-of-line 1)
-    (copy-region-as-kill (region-beginning) (region-end))
-    (deactivate-mark)
-    (insert "\n")
-    (yank)
-    (pop kill-ring))
-  (call-interactively 'next-line)))
+(defun duplicate-line (arg)
+  "Duplicate current line, leaving point in lower line.
+   source: https://stackoverflow.com/a/998472"
+  (interactive "*p")
+
+  ;; save the point for undo
+  (setq buffer-undo-list (cons (point) buffer-undo-list))
+
+  ;; local variables for start and end of line
+  (let ((bol (save-excursion (beginning-of-line) (point)))
+        eol)
+    (save-excursion
+
+      ;; don't use forward-line for this, because you would have
+      ;; to check whether you are at the end of the buffer
+      (end-of-line)
+      (setq eol (point))
+
+      ;; store the line and disable the recording of undo information
+      (let ((line (buffer-substring bol eol))
+            (buffer-undo-list t)
+            (count arg))
+        ;; insert the line arg times
+        (while (> count 0)
+          (newline)         ;; because there is no newline in 'line'
+          (insert line)
+          (setq count (1- count)))
+        )
+
+      ;; create the undo information
+      (setq buffer-undo-list (cons (cons eol (point)) buffer-undo-list)))
+    ) ; end-of-let
+
+  ;; put the point in the lowest line and return
+  (next-line arg))
 
 (defun lookup-docs-for-symbol-at-point ()
   (interactive)
     (+lookup/online (thing-at-point 'symbol) "DevDocs.io"))
 
+(defun my/org-open-at-point ()
+  (interactive)
+  (call-interactively #'delete-other-windows)
+  (call-interactively #'split-window-right)
+  (call-interactively #'other-window)
+  (call-interactively #'org-open-at-point)
+  ;; (call-interactively #'other-window)
+  )
+
 (defun my-lookup/definition ()
   (interactive)
-  (when (call-interactively #'+lookup/definition)
-    (recenter-top-bottom 3)))
+  (if (eq major-mode 'jai-mode)
+      (let ((root-dir   (projectile-project-root))
+            (identifier (doom-thing-at-point-or-region)))
+
+        (if (null identifier) (user-error "Nothing under point"))
+
+        ;; (projectile-ripgrep (concat "(?:(\\s+)|\\()(" identifier ")(?:\\s*:)") t)
+        ;; (projectile-ripgrep (concat "" identifier "(?:\\s*:)") t)
+        (projectile-ripgrep (concat "(" identifier "\\s*:)") t)
+        )
+      ;; if not jai mode
+      (when (call-interactively #'+lookup/definition)
+        (recenter-top-bottom 3)))
+  )
 
 (defun mark-word-or-next-word-like-this ()
   "if there is no active region the word under
@@ -572,6 +645,7 @@
     (c-set-offset 'brace-list-intro '+)
     (c-set-offset 'brace-list-close 0))
 
+  (add-hook 'prog-mode-hook 'which-function-mode)
   (add-hook 'java-mode-hook 'my-c-mode-hook)
   (add-hook 'c-mode-hook    'my-c-mode-hook)
   (add-hook 'c++-mode-hook  'my-c-mode-hook)
@@ -619,6 +693,97 @@
       ))
   )
 
+(code-region "Org babel"
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t) ;; Other languages
+     (shell      . t)
+     (sqlite     . t)
+     (python     . t)
+     (jupyter    . t)))
+
+  (require 'jupyter)
+  (require 'ob-jupyter)
+  (org-babel-jupyter-override-src-block "python")
+  (setq ob-async-no-async-languages-alist '("python" "jupyter-python"))
+  (setq org-babel-default-header-args:python '((:async . "yes")
+                                               (:kernel . "python3")
+                                               (:session . "python-default-session")))
+
+  (defun execute-command-and-insert-as-org-result (org-buffer exe-file on-done)
+    (lexical-let ((previous-compilation-hooks compilation-finish-functions)
+                  (buffer    org-buffer)
+                  (on-done   on-done))
+
+      (setq compilation-finish-functions
+            (lambda (comp-buffer result)
+              (compilation-minor-mode 1)
+              (setq compilation-finish-functions previous-compilation-hooks)
+              (let* ((comp-result-str (buffer-substring-no-properties
+                                       (point-min) (point-max)))
+                     (stripped-comp-result-str
+                      (string-join (butlast (nthcdr 4 (split-string comp-result-str "\n")) 2)
+                                   "\n")))
+
+                (switch-to-buffer buffer)
+                (org-babel-insert-result stripped-comp-result-str)
+                (funcall on-done)))))
+
+    (compilation-start exe-file t)
+    (other-window 1))
+
+
+  (defun run-pascal-org-src-bloc ()
+    (interactive)
+
+    (lexical-let ((code (cadr (org-babel-get-src-block-info t)))
+                  (used-register 2))
+      (window-configuration-to-register used-register)
+      (when code
+        (lexical-let* ((hash            (abs (sxhash code)))
+                       (pascal-file-dir (temporary-file-directory))
+                       (curr-dir        default-directory)
+                       (curr-buffer     (current-buffer))
+                       (pascal-file     (format "%spascal_%d.pp"  pascal-file-dir hash))
+                       (exe-file        (format "%spascal_%d.exe" pascal-file-dir hash)))
+
+          (with-temp-file pascal-file
+            (insert code))
+
+          (lexical-let ((previous-compilation-hooks compilation-finish-functions))
+            (setq compilation-finish-functions
+                  (lambda (comp-buffer result)
+                    (setq compilation-finish-functions previous-compilation-hooks)
+                    (when (string= result "finished\n")
+                      ;;(switch-to-buffer comp-buffer)
+                      (quit-window nil (get-buffer-window comp-buffer))
+                      (execute-command-and-insert-as-org-result curr-buffer
+                                                                exe-file
+                                                                (lambda () (jump-to-register used-register)))))))
+
+          (cd pascal-file-dir)
+          (+org-clear-babel-results-h)
+          (compilation-start (format "fpc pascal_%d" hash) t)
+          (cd curr-dir)))))
+
+  (defun my-org-babel-execute-src-block ()
+    (interactive)
+    (let ((code-info (org-babel-get-src-block-info t)))
+      (if code-info
+          (if (string= (car code-info) "pascal")
+              (run-pascal-org-src-bloc)
+            (org-babel-execute-src-block))
+        (org-ctrl-c-ctrl-c)
+        )))
+
+  (bind-key "C-c C-c" #'my-org-babel-execute-src-block org-mode-map)
+
+  ;; to correctly render the colored error messages
+  (defun display-ansi-colors ()
+    (ansi-color-apply-on-region (point-min) (point-max)))
+  (add-hook 'org-babel-after-execute-hook #'display-ansi-colors)
+  )
+
 (code-region "Org config"
   (use-package citar
     :no-require
@@ -630,10 +795,24 @@
     (org-cite-follow-processor 'citar)
     (org-cite-activate-processor 'citar)
     (citar-bibliography org-cite-global-bibliography)
+
+    (use-package org-capture
+      :config
+      (setq org-capture-templates
+            '(("t" "Todo Today" checkitem (file+headline "~/org/todo.org" "Today")
+               "- [ ] %?\n" :unnarrowed t)
+              ("b" "To buy" entry (file+headline "~/org/todo.org" "Einkaufsliste")
+               "* TOBUY %?\n" :unnarrowed t)
+              ("j" "Journal" entry (file+datetree "~/org/journal.org")
+               "* %?\nEntered on %U\n  %i\n  %a"
+               :unnarrowed t))))
+
+
     ;; optional: org-cite-insert is also bound to C-c C-x C-@
     :bind
     (:map org-mode-map :package org ("C-c b" . #'org-cite-insert))
     )
+
 
   (setq citar-symbols
       `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
@@ -780,10 +959,12 @@ in a 'images' folder and insert a link to it in the org buffer."
 
 
   (map! :map org-mode-map
+        "C-c C-o" 'my/org-open-at-point
         "C-r"  'org-roam-node-insert
         "C-j"  'join-line
         "C-y"  'my-org-yank
-        "M-q"  'my-org-fill-paragraph)
+        "M-q"  'my-org-fill-paragraph
+        "C-#"  'comment-line)
 
   (code-region "color links"
     ;; work like this:
@@ -903,6 +1084,7 @@ in a 'images' folder and insert a link to it in the org buffer."
             ("events"      ,(list (all-the-icons-faicon "calendar-check-o")) nil nil)
             ("geburtstage" ,(list (all-the-icons-faicon "birthday-cake"))    nil nil)
             ("todo"        ,(list (all-the-icons-faicon "check"))            nil nil)
+            ("sport"       ,(list "🏓")            nil nil)
             ("pprog"       ,(list (all-the-icons-faicon "align-left"))       nil nil)
             ("dbsys"       ,(list (all-the-icons-faicon "table"))            nil nil)
             ("gemji"       ,(list (all-the-icons-faicon "gamepad"))          nil nil)
@@ -959,18 +1141,18 @@ This function makes sure that dates are aligned for easy reading."
                "today"
                ((org-agenda-remove-tags t)
                 (org-agenda-overriding-header "Other todos today:\n")))
-              (todo ""
-               ((org-agenda-overriding-header "Lectures still to watch:\n")
-                (org-agenda-files '("~/org/uni.org"))
-                (org-agenda-prefix-format   "  %-2i  %-10(format-lectures) ")
-                (org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline 'timestamp))))
-              (tags  "assignments"
-               ((org-agenda-skip-function '(my/org-skip-function 'agenda))
-                (org-agenda-prefix-format   "  %-2i  %-23(format-deadlines) ")
-                (org-agenda-sorting-strategy '(deadline-up))
-                (org-agenda-files '("~/org/uni.org"))
-                (org-agenda-overriding-header "Due assignments:\n")
-                (org-agenda-remove-tags t)))
+              ;; (todo ""
+              ;;  ((org-agenda-overriding-header "Lectures still to watch:\n")
+              ;;   (org-agenda-files '("~/org/uni.org"))
+              ;;   (org-agenda-prefix-format   "  %-2i  %-10(format-lectures) ")
+              ;;   (org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline 'timestamp))))
+              ;; (tags  "assignments"
+              ;;  ((org-agenda-skip-function '(my/org-skip-function 'agenda))
+              ;;   (org-agenda-prefix-format   "  %-2i  %-23(format-deadlines) ")
+              ;;   (org-agenda-sorting-strategy '(deadline-up))
+              ;;   (org-agenda-files '("~/org/uni.org"))
+              ;;   (org-agenda-overriding-header "Due assignments:\n")
+              ;;   (org-agenda-remove-tags t)))
               (agenda ""
                ((org-agenda-start-day "-1d")
                 (org-agenda-span 15)
@@ -984,9 +1166,7 @@ This function makes sure that dates are aligned for easy reading."
                 (org-agenda-scheduled-leaders '("Scheduled: " "Overdue: "))
                 (org-agenda-time-grid '((daily today remove-match)
                                         (0800 0900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200)
-                                        " . . ." "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"))))))))
-    )
-  )
+                                        " . . ." "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"))))))))))
 
 (code-region "Org gardentangle"
 
@@ -1134,6 +1314,7 @@ arg is not set, and I don't know how I can make the original
 
 (code-region "Org publish stuff for garden"
   (require 'ox-publish)
+  (use-package! ox-twbs)
   (use-package! ox-hugo
     :custom
     (org-hugo-auto-set-lastmod t)
@@ -1259,8 +1440,8 @@ arg is not set, and I don't know how I can make the original
                                " | sort -u")
                        t))
 
-(map! :map jai-mode-map
-      "M-." 'search-jai-modules)
+;; (map! :map jai-mode-map
+;;       "M-." 'search-jai-modules)
 
 (defun delete-trailing-whitespace-except-current-line ()
   (interactive)
@@ -1284,20 +1465,21 @@ arg is not set, and I don't know how I can make the original
 
 
 (code-region "Korean input"
-  (setq lang :de)
+  (defvar *my-input-method* :de)
+
   (defun change-lang ()
     (interactive)
     ;; (keyboard-translate ?z ?y)
-    (if (eq lang :de)
+    (if (eq *my-input-method* :de)
         (progn
           (keyboard-translate ?y ?z)  ; For german keyboards
           (keyboard-translate ?z ?y)
           (set-input-method 'korean-hangul)
-          (setq lang :kr))
+          (setq *my-input-method* :kr))
       (toggle-input-method nil)
       (keyboard-translate ?y ?y)  ; For german keyboards
       (keyboard-translate ?z ?z)
-      (setq lang :de)))
+      (setq *my-input-method* :de)))
   )
 
 (defun show-in-explorer ()
@@ -1331,6 +1513,30 @@ arg is not set, and I don't know how I can make the original
 
 
 (push 'jai compilation-error-regexp-alist)
-(add-hook 'jai-mode-hook
-          (lambda ()
-            (setq-local fill-paragraph-function #'c-fill-paragraph)))
+;; (add-hook 'jai-mode-hook
+          ;; (lambda ()
+            ;; (setq-local fill-paragraph-function #'c-fill-paragraph)))
+
+
+(defun setup-tide-mode ()
+  (interactive)
+  (tide-setup)
+  (flycheck-mode +1)
+  (setq flycheck-check-syntax-automatically '(save mode-enabled))
+  (eldoc-mode +1)
+  (tide-hl-identifier-mode +1)
+  ;; company is an optional dependency. You have to
+  ;; install it separately via package-install
+  ;; `M-x package-install [ret] company`
+  (company-mode +1))
+
+;; aligns annotation to the right hand side
+(setq company-tooltip-align-annotations t)
+
+;; formats the buffer before saving
+;; (add-hook 'before-save-hook 'tide-format-before-save)
+
+;; if you use typescript-mode
+(add-hook 'typescript-mode-hook #'setup-tide-mode)
+;; if you use treesitter based typescript-ts-mode (emacs 29+)
+(add-hook 'typescript-ts-mode-hook #'setup-tide-mode)

@@ -74,7 +74,7 @@ source: https://stackoverflow.com/questions/24356401/how-to-append-multiple-elem
 
 (if is-windows
     (append-to-list 'secondary-build-script-names
-                    (list '("build.jai"      . "jai build.jai -quiet -exe app && app")
+                    (list '("build.jai"      . "jai build.jai -quiet -exe app")
                           '("main.jai"       . "jai main.jai -quiet -exe app && app")
                           '("first.jai"      . "jai first.jai -quiet -exe app && app")))
   (append-to-list 'secondary-build-script-names
