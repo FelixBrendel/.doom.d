@@ -127,9 +127,10 @@
 (use-package! company-posframe
   :config
   (company-posframe-mode 1))
-(use-package! ssh-agency
-  :defer t)
+(use-package! ssh-agency :defer t)
 (use-package! valign)
+(use-package! org-preview)
+
 (use-package! form-feed
   :hook (prog-mode . form-feed-mode)
         (org-mode . form-feed-mode))
@@ -200,6 +201,9 @@
   (org-roam-capture-templates
    '(("d" "General Notes" plain "%?" :target
       (file+head "Default/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n")
+      :unnarrowed t)
+     ("m" "Music" plain "%?" :target
+      (file+head "Music/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+setupfile: setupfile.org\n#+filetags: :music:\n")
       :unnarrowed t)
      ("k" "Korean" plain "%?" :target
       (file+head "Korean/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :korean:\n")
@@ -362,14 +366,13 @@
   (interactive)
     (+lookup/online (thing-at-point 'symbol) "DevDocs.io"))
 
-(defun my/org-open-at-point ()
+(defun lookup/definition-other-window ()
   (interactive)
-  (call-interactively #'delete-other-windows)
-  (call-interactively #'split-window-right)
-  (call-interactively #'other-window)
-  (call-interactively #'org-open-at-point)
-  ;; (call-interactively #'other-window)
-  )
+  (delete-other-windows)
+  (split-window-right)
+  (other-window 1)
+  (my-lookup/definition)
+  (other-window 1))
 
 (defun my-lookup/definition ()
   (interactive)
@@ -437,7 +440,7 @@
 (map!  "C-c f p"     'doom/open-private-config)
 (map! :map global-map
       "C-c f p" 'doom/open-private-config
-      "M-." 'my-lookup/definition)
+      "M-." 'lookup/definition-other-window)
 
 
 (setq +doom-dashboard-menu-sections
@@ -899,12 +902,18 @@ in a 'images' folder and insert a link to it in the org buffer."
           ("begin" "$1" "$" "$$" "\\(" "\\[")))
   (setq org-preview-latex-image-directory "./images/latex/")
 
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (if (member "music" (org-get-tags))
+                  (setq org-preview-latex-default-process 'dvisvgmmusic))))
   (setq org-export-babel-evaluate nil
         org-fontify-quote-and-verse-blocks t
         org-fontify-whole-heading-line t
         org-hide-emphasis-markers nil
         org-highlight-latex-and-related '(latex)
-        org-html-with-latex 'dvisvgm
+        org-html-with-latex               'dvisvgm
+        org-preview-latex-default-process 'dvisvgm
+
         org-latex-caption-above '(table src-block)
         ;; org-latex-listings t
         org-latex-src-block-backend 'minted
@@ -913,7 +922,6 @@ in a 'images' folder and insert a link to it in the org buffer."
         org-startup-with-latex-preview t
         org-startup-indented t
 
-        org-preview-latex-default-process 'dvisvgm
         org-preview-latex-process-alist
         `((dvipng :programs
            ("latex" "dvipng")
@@ -932,7 +940,20 @@ in a 'images' folder and insert a link to it in the org buffer."
            :image-input-type "dvi"
            :image-output-type "svg"
            :image-size-adjust (1.7 . 1.5)
-           :latex-compiler ("latex -interaction nonstopmode -output-directory %o %f")
+           :latex-compiler
+           ("latex -interaction nonstopmode -output-directory %o %f")
+           :image-converter ("dvisvgm %f -n -b min -c %S -o %O"))
+          (dvisvgmmusic :programs
+           ("latex" "dvisvgm")
+           :description "dvi > svg via musixflx"
+           :message "you need to install the programs: latex and dvisvgm."
+           :image-input-type "dvi"
+           :image-output-type "svg"
+           :image-size-adjust (1.7 . 1.5)
+           :latex-compiler
+           ("latex -interaction nonstopmode -output-directory %o %f"
+            "musixflx %f"
+            "latex -interaction nonstopmode -output-directory %o %f")
            :image-converter ("dvisvgm %f -n -b min -c %S -o %O"))
           (imagemagick :programs
            ("latex" "convert")
@@ -1502,6 +1523,8 @@ arg is not set, and I don't know how I can make the original
 (push '(organization . organization) citeproc-blt-to-csl-standard-alist)
 
 (require 'jai-mode)
+(require 'org-preview)
+
 (setq jai--error-regexp "^\\([^\n]*[^ :]+\\):\\([0-9]+\\),\\([0-9]+\\): \\(?:Error\\|\\(Info\\|Warning\\)\\)")
 (push `(jai ,jai--error-regexp 1 2 3 (4)) compilation-error-regexp-alist-alist)
 ;;
