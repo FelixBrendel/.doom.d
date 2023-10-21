@@ -63,6 +63,7 @@
 
 ;; (package! kuronami-theme :recipe (:host github :repo "super3ggo/kuronami" :files ("kuronami-theme.el")))
 (package! jai-mode       :recipe (:host github :repo "krig/jai-mode"        :files ("jai-mode.el")))
+(package! catppuccin-theme)
 
 (package! org-preview    :recipe (:host github :repo "karthink/org-preview" :files ("org-preview.el")))
 

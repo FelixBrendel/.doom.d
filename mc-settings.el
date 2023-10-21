@@ -48,6 +48,7 @@
         mark-word-or-next-word-like-this
         mc--insert-letter-and-increase
         mc--insert-number-and-increase
+        mc/vertical-align-with-space
         org-export-dispatch
         org-roam-node-find
         shell-command

@@ -37,7 +37,7 @@
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets.
-(setq user-full-name "Felix Brendel"
+(setq user-full-name    "Felix Brendel"
       user-mail-address "felix@brendel.io")
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
@@ -53,8 +53,12 @@
 ;; (setq doom-font (font-spec :family "monospace" :size 12 :weight 'semi-light)
 
 ;;       doom-variable-pitch-font (font-spec :family "sans" :size 13))
-(setq doom-font (font-spec :name "noto sans mono" :size 12.0)
-      doom-modeline-major-mode-icon t)
+;; (setq doom-font         (font-spec :family "randy-gg" :size 13.5))
+(setq doom-font         (font-spec :family "noto sans mono" :size 12.0))
+
+(setq doom-modeline-major-mode-icon t
+      doom-unicode-font        doom-font
+      doom-variable-pitch-font doom-font)
 
 (prefer-coding-system 'utf-8)
 
@@ -68,13 +72,16 @@
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 ;; (setq doom-theme 'doom-nord)
-(setq doom-theme 'doom-nova)
+;; (setq doom-theme 'doom-nova)
+(setq doom-theme 'catppuccin)
+(setq catppuccin-flavor 'frappe) ;; or 'latte, 'macchiato, or 'mocha
+;; (catppuccin-reload)
 
 (use-package! sqlite)
 (use-package! sly)
 (use-package! rg)
 (use-package! flycheck)
-(use-package! jupyter)
+
 (use-package! csharp-mode)
 
 
@@ -96,7 +103,7 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/org/")
+(setq org-directory (or (getenv "ORG-DIR") "~/org/"))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -129,7 +136,7 @@
   (company-posframe-mode 1))
 (use-package! ssh-agency :defer t)
 (use-package! valign)
-(use-package! org-preview)
+; (use-package! org-preview)
 
 (use-package! form-feed
   :hook (prog-mode . form-feed-mode)
@@ -196,6 +203,15 @@
                  (window-parameters . ((no-delete-other-windows . t)))))
   (setq org-roam-v2-ack t)
   :custom
+  ;; NOTE(Felix): dir locals for vault
+  ;; ((org-mode . ((eval . (progn
+  ;;                         (face-remap-add-relative 'org-document-title '(:height 2.4 :family "Times New Roman" :weight bold))
+  ;;                         (face-remap-add-relative 'org-level-1        '(:height 2.0 :family "Times New Roman"))
+  ;;                         (face-remap-add-relative 'org-level-2        '(:height 1.8 :family "Times New Roman"))
+  ;;                         (face-remap-add-relative 'org-level-3        '(:height 1.6 :family "Times New Roman"))
+  ;;                         (face-remap-add-relative 'org-level-4        '(:height 1.4 :family "Times New Roman"))
+  ;;                         (face-remap-add-relative 'org-level-5        '(:height 1.2 :family "Times New Roman"))
+  ;;                         (setq-local org-bullets-bullet-list '(" ")))))))
   (org-roam-directory (concat org-directory "vault/"))
   (org-roam-db-location (concat org-directory "vault/.roam.db"))
   (org-roam-capture-templates
@@ -220,6 +236,9 @@
       :unnarrowed t)
      ("pj" "jai" plain "%?" :target
       (file+head "Programming/jai/${slug}.org" "#+title: [jai] ${title}\n#+date: %<%F>\n#+filetags: :jai:\n")
+      :unnarrowed t)
+     ("pp" "general" plain "%?" :target
+      (file+head "Programming/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :programming:\n")
       :unnarrowed t)
 
      ("u" "Notes for Uni")
@@ -376,19 +395,20 @@
 
 (defun my-lookup/definition ()
   (interactive)
-  (if (eq major-mode 'jai-mode)
-      (let ((root-dir   (projectile-project-root))
-            (identifier (doom-thing-at-point-or-region)))
+  ;; (if (eq major-mode 'jai-mode)
+      ;; (let ((root-dir   (projectile-project-root))
+            ;; (identifier (doom-thing-at-point-or-region)))
 
-        (if (null identifier) (user-error "Nothing under point"))
+        ;; (if (null identifier) (user-error "Nothing under point"))
 
-        ;; (projectile-ripgrep (concat "(?:(\\s+)|\\()(" identifier ")(?:\\s*:)") t)
-        ;; (projectile-ripgrep (concat "" identifier "(?:\\s*:)") t)
-        (projectile-ripgrep (concat "(" identifier "\\s*:)") t)
-        )
+        ;; ;; (projectile-ripgrep (concat "(?:(\\s+)|\\()(" identifier ")(?:\\s*:)") t)
+        ;; ;; (projectile-ripgrep (concat "" identifier "(?:\\s*:)") t)
+        ;; (projectile-ripgrep (concat "(" identifier "\\s*:)") t)
+        ;; )
       ;; if not jai mode
       (when (call-interactively #'+lookup/definition)
-        (recenter-top-bottom 3)))
+        (recenter-top-bottom 3))
+      ;; )
   )
 
 (defun mark-word-or-next-word-like-this ()
@@ -408,6 +428,8 @@
   ;; NOTE(Felix): after first arg there is body and should be indented as body
   (declare (indent 1))
   (cons 'progn body))
+
+
 
 
 (code-region "Compiling"
@@ -430,6 +452,7 @@
       "C-#"         'comment-line
       "M-SPC"       'change-lang
       "M-d"         'lookup-docs-for-symbol-at-point
+      "M-o"         'mc/vertical-align-with-space
       :leader "e"   'find-build-script-and-compile
       )
 
@@ -444,7 +467,10 @@
 
 
 (setq +doom-dashboard-menu-sections
-      '(("Find node in vault"
+      '(("Track Work for Bernd"
+         :icon (all-the-icons-material "work" :face 'doom-dashboard-menu-title)
+         :action open-bernd-work)
+        ("Find node in vault"
          :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
          :action org-roam-node-find)
         ("Open random node from vault"
@@ -696,22 +722,42 @@
       ))
   )
 
-(code-region "Org babel"
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((emacs-lisp . t) ;; Other languages
-     (shell      . t)
-     (sqlite     . t)
-     (python     . t)
-     (jupyter    . t)))
+(code-region "lsp stuff"
+  (with-eval-after-load 'lsp-mode
+    (add-to-list 'lsp-language-id-configuration
+                 '(jai-mode . "jai"))
 
-  (require 'jupyter)
-  (require 'ob-jupyter)
-  (org-babel-jupyter-override-src-block "python")
-  (setq ob-async-no-async-languages-alist '("python" "jupyter-python"))
-  (setq org-babel-default-header-args:python '((:async . "yes")
-                                               (:kernel . "python3")
-                                               (:session . "python-default-session")))
+    ;; (lsp-register-client
+     ;; (make-lsp-client :new-connection (lsp-stdio-connection "jails")
+                      ;; :activation-fn (lsp-activate-on "jai")
+                      ;; :server-id 'jails))
+
+  ;; (add-hook 'jai-mode-hook (lambda () (lsp)))
+  ))
+
+(code-region "Org babel"
+
+  (code-region "jupyter"
+    (let ((jupyter-present (not (not (executable-find "jupyter")))))
+      (org-babel-do-load-languages
+       'org-babel-load-languages
+       `((emacs-lisp . t) ;; Other languages
+         (shell      . t)
+         (sqlite     . t)
+         (python     . t)
+         (jupyter    . ,jupyter-present)))
+
+      (when jupyter-present
+        (use-package! jupyter)
+        (require 'jupyter)
+        (require 'ob-jupyter)
+        (org-babel-jupyter-override-src-block "python")
+        (setq ob-async-no-async-languages-alist '("python" "jupyter-python"))
+        (setq org-babel-default-header-args:python '((:async . "yes")
+                                                     (:kernel . "python3")
+                                                     (:session . "python-default-session")))))
+    )
+
 
   (defun execute-command-and-insert-as-org-result (org-buffer exe-file on-done)
     (lexical-let ((previous-compilation-hooks compilation-finish-functions)
@@ -792,8 +838,8 @@
     :no-require
     :custom
     (org-cite-global-bibliography
-     (list (expand-file-name "~/org/bib.bib")
-           (expand-file-name "~/org/vault.bib")))
+     (list (expand-file-name (concat org-directory "bib.bib"))
+           (expand-file-name (concat org-directory "vault.bib"))))
     (org-cite-insert-processor 'citar)
     (org-cite-follow-processor 'citar)
     (org-cite-activate-processor 'citar)
@@ -802,11 +848,11 @@
     (use-package org-capture
       :config
       (setq org-capture-templates
-            '(("t" "Todo Today" checkitem (file+headline "~/org/todo.org" "Today")
+            '(("t" "Todo Today" checkitem (file+headline (concat org-directory "todo.org") "Today")
                "- [ ] %?\n" :unnarrowed t)
-              ("b" "To buy" entry (file+headline "~/org/todo.org" "Einkaufsliste")
+              ("b" "To buy" entry (file+headline (concat org-directory "todo.org") "Einkaufsliste")
                "* TOBUY %?\n" :unnarrowed t)
-              ("j" "Journal" entry (file+datetree "~/org/journal.org")
+              ("j" "Journal" entry (file+datetree (concat org-directory "journal.org"))
                "* %?\nEntered on %U\n  %i\n  %a"
                :unnarrowed t))))
 
@@ -854,7 +900,7 @@ in a 'images' folder and insert a link to it in the org buffer."
         (org-paste-screenshot-from-clipboard)
       (call-interactively #'org-yank)))
 
-  (add-hook 'org-mode-hook 'valign-mode)
+  (add-hook 'org-mode-hook #'valign-mode)
   (add-hook 'org-mode-hook 'org-bullets-mode)
   (add-hook 'org-mode-hook 'org-fragtog-mode)
   (add-hook 'org-mode-hook (lambda () (setq fill-column 75)))
@@ -981,6 +1027,7 @@ in a 'images' folder and insert a link to it in the org buffer."
 
   (map! :map org-mode-map
         "C-c C-o" 'my/org-open-at-point
+        "C-c C-o" 'org-open-at-point
         "C-r"  'org-roam-node-insert
         "C-j"  'join-line
         "C-y"  'my-org-yank
@@ -1098,6 +1145,10 @@ in a 'images' folder and insert a link to it in the org buffer."
 
     (setq org-tags-column -90)
     (setq org-log-done t)
+
+    ;; NOTE(Felix): for org clocktables dont show number of days, keep counting
+    ;;   hours even they are more than 24
+    (setq org-duration-format '(("h") (special . h:mm)))
     (setq org-agenda-category-icon-alist
           `(("teaching"    ,(list "\xf130")       nil nil :ascent center)
             ("pizza"       ,(list (all-the-icons-material "local_pizza"))           nil nil)
@@ -1116,7 +1167,7 @@ in a 'images' folder and insert a link to it in the org buffer."
     (setq org-agenda-format-date 'my-org-agenda-format-date-aligned)
     (setq org-agenda-dim-blocked-tasks 'invisible)
 
-    (setq org-archive-location "~/org/.archives/%s_archive::")
+    (setq org-archive-location (concat org-directory ".archives/%s_archive::"))
 
     (defun my-org-agenda-format-date-aligned (date)
       "Format a DATE string for display in the daily/weekly agenda, or timeline.
@@ -1162,11 +1213,11 @@ This function makes sure that dates are aligned for easy reading."
                "today"
                ((org-agenda-remove-tags t)
                 (org-agenda-overriding-header "Other todos today:\n")))
-              ;; (todo ""
-              ;;  ((org-agenda-overriding-header "Lectures still to watch:\n")
-              ;;   (org-agenda-files '("~/org/uni.org"))
-              ;;   (org-agenda-prefix-format   "  %-2i  %-10(format-lectures) ")
-              ;;   (org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline 'timestamp))))
+              ;; (tags "today"
+               ;;((org-agenda-overriding-header "Lectures still to watch:\n")
+                ;;(org-agenda-files '("~/org/uni.org"))
+                ;;(org-agenda-prefix-format   "  %-2i  %-10(format-lectures) ")
+                ;;(org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline 'timestamp))))
               ;; (tags  "assignments"
               ;;  ((org-agenda-skip-function '(my/org-skip-function 'agenda))
               ;;   (org-agenda-prefix-format   "  %-2i  %-23(format-deadlines) ")
@@ -1200,7 +1251,7 @@ This function makes sure that dates are aligned for easy reading."
                                    ;; (expand-file-name "~/org/"))
       ;; ))
 
-  (setq tangle-bib-file "~/org/vault.bib")
+  (setq tangle-bib-file (concat org-directory "vault.bib"))
   (defun my-org-babel-tangle-append (&optional arg target-file lang-re)
     "Hard copy of `org-babel-tangle' with the difference-of
 appending to the tangled file instead of overwriting it. Before
@@ -1314,7 +1365,7 @@ arg is not set, and I don't know how I can make the original
           `(("garden-bib"
              :base-directory ,org-roam-directory
              :base-extension "org"
-             :publishing-directory ,(expand-file-name "~/org/")
+             :publishing-directory ,(expand-file-name org-directory)
              :recursive t
              :publishing-function my-org-babel-tangle-publish
              :auto-preamble t
@@ -1523,7 +1574,7 @@ arg is not set, and I don't know how I can make the original
 (push '(organization . organization) citeproc-blt-to-csl-standard-alist)
 
 (require 'jai-mode)
-(require 'org-preview)
+;; (require 'org-preview)
 
 (setq jai--error-regexp "^\\([^\n]*[^ :]+\\):\\([0-9]+\\),\\([0-9]+\\): \\(?:Error\\|\\(Info\\|Warning\\)\\)")
 (push `(jai ,jai--error-regexp 1 2 3 (4)) compilation-error-regexp-alist-alist)
@@ -1536,9 +1587,6 @@ arg is not set, and I don't know how I can make the original
 
 
 (push 'jai compilation-error-regexp-alist)
-;; (add-hook 'jai-mode-hook
-          ;; (lambda ()
-            ;; (setq-local fill-paragraph-function #'c-fill-paragraph)))
 
 
 (defun setup-tide-mode ()
@@ -1563,3 +1611,27 @@ arg is not set, and I don't know how I can make the original
 (add-hook 'typescript-mode-hook #'setup-tide-mode)
 ;; if you use treesitter based typescript-ts-mode (emacs 29+)
 (add-hook 'typescript-ts-mode-hook #'setup-tide-mode)
+
+
+(defun copy-rectangle-as-one-line (start end)
+  "Like `copy-rectangle-as-kill', but make just one string out of it."
+  (interactive "r")
+  (call-interactively #'copy-rectangle-as-kill)
+  (with-temp-buffer
+    (yank-rectangle)
+    (delete-trailing-whitespace)
+    (kill-region (point-min) (point-max))))
+
+(setq org-prettify-symbols-alist
+      '(("lambda" . 955)))
+
+;; (add-hook 'org-mode-hook (lambda ()
+   ;; "Beautify Org Checkbox Symbol"
+   ;; (setq-local prettify-symbols-alist org-prettify-symbols-alist)
+   ;; (push '("[ ]" . "")  prettify-symbols-alist)
+   ;; (push '("[X]" . "" ) prettify-symbols-alist)
+   ;; (push '("[-]" . "" ) prettify-symbols-alist)
+   ;; (prettify-symbols-mode)
+   ;; ))
+
+;; (add-hook 'emacs-startup-hook (lambda () (doom/reload-font)))
