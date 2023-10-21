@@ -56,7 +56,6 @@
 (package! biblio)
 (package! ox-hugo)
 (package! ssh-agency)
-(package! csharp-mode)
 
 (package! yaml-mode)
 (package! form-feed)
@@ -67,7 +66,6 @@
 
 (package! org-preview    :recipe (:host github :repo "karthink/org-preview" :files ("org-preview.el")))
 
-(package! dirvish)
 (package! rg)
 (package! flycheck) ;; for inline error messages from lsp
 

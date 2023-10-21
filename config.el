@@ -77,13 +77,12 @@
 (setq catppuccin-flavor 'frappe) ;; or 'latte, 'macchiato, or 'mocha
 ;; (catppuccin-reload)
 
+(setq dired-omit-files "\\`[.]?#\\|\\`[.][.]?\\'")
+
 (use-package! sqlite)
 (use-package! sly)
 (use-package! rg)
 (use-package! flycheck)
-
-(use-package! csharp-mode)
-
 
 (use-package! neotree
   :custom
@@ -157,12 +156,6 @@
   (setq completion-styles '(substring orderless)
         completion-category-defaults nil
         completion-category-overrides '((file (styles . (partial-completion))))))
-
-(use-package! dirvish
-  :ensure t
-  :init
-  ;; Let Dirvish take over Dired globally
-  (dirvish-override-dired-mode))
 
 (use-package! ob-sql-mode :ensure t)
 (require 'ob-sql-mode)
@@ -467,23 +460,23 @@
 
 
 (setq +doom-dashboard-menu-sections
-      '(("Track Work for Bernd"
-         :icon (all-the-icons-material "work" :face 'doom-dashboard-menu-title)
-         :action open-bernd-work)
+      '(;; ("Track Work for Bernd"
+        ;;  :icon (nerd-icons-mdicon "nf-md-bag_checked" :face 'doom-dashboard-menu-title)
+        ;;  :action open-bernd-work)
         ("Find node in vault"
-         :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-mdicon "nf-md-magnify" :face 'doom-dashboard-menu-title)
          :action org-roam-node-find)
         ("Open random node from vault"
-         :icon (all-the-icons-octicon "briefcase" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-faicon "nf-fa-briefcase" :face 'doom-dashboard-menu-title)
          :action org-roam-node-random)
         ("Show knowledge graph"
-         :icon (all-the-icons-octicon "briefcase" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-mdicon "nf-md-graph_outline" :face 'doom-dashboard-menu-title)
          :action org-roam-ui-mode)
         ("Open Calendar"
-         :icon (all-the-icons-octicon "briefcase" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-codicon "nf-cod-calendar" :face 'doom-dashboard-menu-title)
          :action open-my-calendar)
         ("Open private configuration"
-         :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-mdicon "nf-md-tools" :face 'doom-dashboard-menu-title)
          :when (file-directory-p doom-private-dir)
          :action doom/open-private-config)))
 
@@ -864,9 +857,9 @@
 
 
   (setq citar-symbols
-      `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
-        (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
-        (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " ")))
+      `((file ,(nerd-icons-faicon "nf-fae-file_export" :face 'nerd-icons-green  :v-adjust -0.1) . " ")
+        (note ,(nerd-icons-mdicon "nf-md-pencil"       :face 'nerd-icons-blue   :v-adjust -0.3) . " ")
+        (link ,(nerd-icons-mdicon "nf-md-link"         :face 'nerd-icons-orange :v-adjust 0.01) . " ")))
   (setq citar-symbol-separator "  ")
   (setq citar-org-roam-mode t)
   (setq citar-notes-source 'citar-org-roam)
@@ -1150,18 +1143,14 @@ in a 'images' folder and insert a link to it in the org buffer."
     ;;   hours even they are more than 24
     (setq org-duration-format '(("h") (special . h:mm)))
     (setq org-agenda-category-icon-alist
-          `(("teaching"    ,(list "\xf130")       nil nil :ascent center)
-            ("pizza"       ,(list (all-the-icons-material "local_pizza"))           nil nil)
-            ("coffee"      ,(list (all-the-icons-faicon "coffee"))           nil nil)
-            ("events"      ,(list (all-the-icons-faicon "calendar-check-o")) nil nil)
-            ("geburtstage" ,(list (all-the-icons-faicon "birthday-cake"))    nil nil)
-            ("todo"        ,(list (all-the-icons-faicon "check"))            nil nil)
+          `(("pizza"       ,(list (nerd-icons-faicon  "nf-fae-pizza"))        nil nil)
+            ("coffee"      ,(list (nerd-icons-faicon  "nf-fa-coffee"))        nil nil)
+            ("events"      ,(list (nerd-icons-codicon "nf-cod-calendar"))     nil nil)
+            ("geburtstage" ,(list (nerd-icons-faicon  "nf-fa-birthday_cake")) nil nil)
+            ("todo"        ,(list (nerd-icons-octicon "nf-oct-checkbox"))     nil nil)
+            ("uni"         ,(list (nerd-icons-faicon "nf-fa-graduation_cap")) nil nil)
             ("sport"       ,(list "🏓")            nil nil)
-            ("pprog"       ,(list (all-the-icons-faicon "align-left"))       nil nil)
-            ("dbsys"       ,(list (all-the-icons-faicon "table"))            nil nil)
-            ("gemji"       ,(list (all-the-icons-faicon "gamepad"))          nil nil)
-            ("mocap"       ,(list (all-the-icons-faicon "eye"))              nil nil)
-            ("uni"         ,(list (all-the-icons-faicon "graduation-cap"))   nil nil)))
+            ("teaching"    ,(list "\xf130")       nil nil :ascent center)))
 
     (setq org-agenda-block-separator (string-to-char " "))
     (setq org-agenda-format-date 'my-org-agenda-format-date-aligned)

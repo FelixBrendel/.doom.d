@@ -15,6 +15,7 @@
 ;;      directory (for easy access to its source code).
 
 (doom! :input
+       ;;bidi              ; (tfel ot) thgir etirw uoy gnipleh
        ;;chinese
        ;;japanese
        ;;layout            ; auie,ctsrnm is the superior home row
@@ -66,7 +67,7 @@
        ;;word-wrap         ; soft wrapping with language-aware indent
 
        :emacs
-       ;;dired             ; making dired pretty [functional]
+       (dired +icons +dirvish) ; making dired pretty [functional]
        ;;electric          ; smarter, keyword-based electric-indent
        ;;ibuffer         ; interactive buffer management
        ;;undo              ; persistent, smarter undo for your inevitable mistakes
@@ -86,7 +87,8 @@
        :tools
        ;;ansible
        biblio
-       ;;debugger          ; FIXME stepping through code, to help you add bugs
+       ;;collab            ; buffers with friends
+       (debugger +lsp)          ; FIXME stepping through code, to help you add bugs
        ;;direnv
        ;;docker
        ;;editorconfig      ; let someone else argue about tabs vs spaces
@@ -104,6 +106,7 @@
        ;;taskrunner        ; taskrunner for all your projects
        ;;terraform         ; infrastructure as code
        ;;tmux              ; an API for interacting with tmux
+       tree-sitter       ; syntax and parsing, sitting in a tree...
        ;;upload            ; map local to remote projects via ssh/ftp
 
        :os
@@ -187,4 +190,4 @@
 
        :config
        ;;literate
-       (default +bindings -smartparens))
+       (default +bindings))
