@@ -102,7 +102,9 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory (or (getenv "ORG-DIR") "~/org/"))
+(setq org-directory                (or (getenv "ORG-DIR")          "~/org/")
+      org-exported-vault-directory (or (getenv "ORG-VAULT-EXPORT") "~/knowledge_base/"))
+
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -1378,8 +1380,7 @@ arg is not set, and I don't know how I can make the original
   (use-package! ox-twbs)
   (use-package! ox-hugo
     :custom
-    (org-hugo-auto-set-lastmod t)
-    )
+    (org-hugo-auto-set-lastmod t))
 
   (with-eval-after-load 'org-roam
     (cl-defmethod org-roam-node-my-title ((node org-roam-node))
@@ -1419,15 +1420,29 @@ arg is not set, and I don't know how I can make the original
 
     (defun publish-garden (&optional FORCE)
       (interactive "P")
-
       (save-excursion
+        (unless (file-directory-p org-exported-vault-directory)
+          (unless (and (executable-find "hugo")
+                       (executable-find "git"))
+            (error "git and hugo need to be installed to be able to export the garden"))
+
+          (make-directory org-exported-vault-directory t)
+          (let ((current-pwd default-directory))
+            (cd (concat org-exported-vault-directory "../"))
+            (compilation-start
+             (concat "hugo new site knowledge_base && "
+                     "cd " org-exported-vault-directory " && "
+                     "git init && "
+                     "git submodule add https://github.com/bphenriques/explorer-hugo-theme themes/explorer"))
+            (write-region "theme = 'explorer'\n[markup.goldmark.renderer]\nunsafe= true" nil (concat org-exported-vault-directory "hugo.toml") 'append)))
+
         (let ((old-org-startup-with-latex-preview org-startup-with-latex-preview)
               (old-org-preview-latex-image-directory org-preview-latex-image-directory)
               (old-org-format-latex-options org-format-latex-options))
 
           ;; config
           (setq org-element-use-cache nil)
-          (setq org-hugo-base-dir "/home/felix/code/knowledge_base/")
+          (setq org-hugo-base-dir (concat org-exported-vault-directory))
           (setq org-format-latex-options
                 '(:foreground default :background default :scale 2 :html-foreground "White" :html-background "Transparent" :html-scale 1.0 :matchers
                               ("begin" "$1" "$" "$$" "\\(" "\\[")))
@@ -1465,7 +1480,7 @@ arg is not set, and I don't know how I can make the original
           (org-publish-project "garden" FORCE)
 
           ;; publish if linux and upload script exists
-          (when (not is-windows)
+          (if (not is-windows)
             (let ((upload-script-path (concat org-hugo-base-dir "upload.sh")))
               (if (file-exists-p upload-script-path)
                   (progn
