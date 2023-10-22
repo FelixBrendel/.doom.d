@@ -1492,8 +1492,7 @@ arg is not set, and I don't know how I can make the original
           (setq org-preview-latex-image-directory old-org-preview-latex-image-directory)
           (setq org-startup-with-latex-preview old-org-startup-with-latex-preview)
           (setq org-format-latex-options old-org-format-latex-options)
-          (message "Publish Done!"))
-        ))))
+          (message "Publish Done!"))))))
 
 (defun search-jai-modules ()
   (interactive)
@@ -1563,17 +1562,6 @@ arg is not set, and I don't know how I can make the original
   (if is-windows
       (shell-command "explorer .")
     (shell-command "thunar .")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; startup
-;; (add-hook 'window-setup-hook
-;;           (lambda ()
-;;             (neotree-toggle)
-;;             (neotree-dir org-directory)
-;;             (neotree-refresh)
-;;             (toggle-frame-maximized)
-;;             (other-window 1)))
 
 (push '(organization . organization) citeproc-blt-to-csl-standard-alist)
 
