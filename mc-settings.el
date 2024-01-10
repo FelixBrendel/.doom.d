@@ -30,7 +30,10 @@
         org-end-of-line
         org-force-self-insert
         org-kill-line
+        org-return
         org-self-insert-command
+        org-shiftleft
+        org-shiftright
         scroll-right
         wdired--self-insert
         ))
@@ -38,19 +41,24 @@
 (setq mc/cmds-to-run-once
       '(
         beginning-of-buffer
+        consult-buffer
         consult-goto-line
         consult-line
+        dired-next-line
         dired-previous-line
         duplicate-line
         find-build-script-and-compile
+        find-file
         indent-for-tab-command
         lookup-docs-for-symbol-at-point
         mark-word-or-next-word-like-this
         mc--insert-letter-and-increase
         mc--insert-number-and-increase
         mc/vertical-align-with-space
+        mouse-set-region
         org-export-dispatch
         org-roam-node-find
+        python-indent-shift-left
         shell-command
         wdired-finish-edit
         ))

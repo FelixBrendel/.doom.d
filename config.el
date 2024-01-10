@@ -102,7 +102,7 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory                (or (getenv "ORG-DIR")          "~/org/")
+(setq org-directory                (or (getenv "ORG_DIR")          "~/org/")
       org-exported-vault-directory (or (getenv "ORG-VAULT-EXPORT") "~/knowledge_base/"))
 
 
@@ -180,6 +180,7 @@
 
 (use-package! multiple-cursors
   :config
+  (define-key mc/keymap (kbd "<return>") nil)
   (after! multiple-cursors-core
     (setq mc/list-file (concat doom-private-dir "mc-settings.el"))))
 (use-package org-fragtog
@@ -207,72 +208,26 @@
   ;;                         (face-remap-add-relative 'org-level-4        '(:height 1.4 :family "Times New Roman"))
   ;;                         (face-remap-add-relative 'org-level-5        '(:height 1.2 :family "Times New Roman"))
   ;;                         (setq-local org-bullets-bullet-list '(" ")))))))
-  (org-roam-directory (concat org-directory "vault/"))
-  (org-roam-db-location (concat org-directory "vault/.roam.db"))
+  (org-roam-dailies-directory (concat org-directory "dailies/"))
+  (org-roam-dailies-capture-templates
+   '(("d" "default" entry "* %<%A %d. %B %Y>\n\n** TODO " :target
+      (file+head "%<%Y>/week-%<%W>.org" "#+title: %<%Y Woche %W> \n#+todo: TODO DOING RUNNING | DONE BLOCKED CANCELLED SKIP\n#+startup: show2levels\n\n \12")
+      :jump-to-captured t :unnarrowed t)))
+  (org-roam-directory         (concat org-directory "vault/"))
+  (org-roam-db-location       (concat org-directory "vault/.roam.db"))
   (org-roam-capture-templates
    '(("d" "General Notes" plain "%?" :target
       (file+head "Default/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n")
       :unnarrowed t)
-     ("m" "Music" plain "%?" :target
-      (file+head "Music/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+setupfile: setupfile.org\n#+filetags: :music:\n")
+     ("p" "Pose estimation" plain "%?" :target
+      (file+head "Pose/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :pose-estimation:\n")
       :unnarrowed t)
-     ("k" "Korean" plain "%?" :target
-      (file+head "Korean/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :korean:\n")
+     ("g" "Graphics" plain "%?" :target
+      (file+head "Graphics/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :graphics:\n")
       :unnarrowed t)
-     ("p" "Notes for Programming things")
-     ("pw" "Win32 API" plain "%?" :target
-      (file+head "Programming/win32/${slug}.org" "#+title: [win32] ${title}\n#+date: %<%F>\n#+filetags: :win32:\n")
-      :unnarrowed t)
-     ("pv" "Vulkan API" plain "%?" :target
-      (file+head "Programming/vulkan/${slug}.org" "#+title: [vk] ${title}\n#+date: %<%F>\n#+filetags: :vulkan:\n")
-      :unnarrowed t)
-     ("pg" "OpenGL" plain "%?" :target
-      (file+head "Programming/opengl/${slug}.org" "#+title: [gl] ${title}\n#+date: %<%F>\n#+filetags: :opengl:\n")
-      :unnarrowed t)
-     ("pj" "jai" plain "%?" :target
-      (file+head "Programming/jai/${slug}.org" "#+title: [jai] ${title}\n#+date: %<%F>\n#+filetags: :jai:\n")
-      :unnarrowed t)
-     ("pp" "general" plain "%?" :target
-      (file+head "Programming/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :programming:\n")
-      :unnarrowed t)
-
-     ("u" "Notes for Uni")
-     ("uc" "Uni/Computer Architecture" plain "%?" :target
-      (file+head "Uni/Computer Architecture/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :computer-architecture:\n")
-      :unnarrowed t)
-     ("ud" "Uni/Databases" plain "%?" :target
-      (file+head "Uni/Databases/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :databases:\n")
-      :unnarrowed t)
-     ("ug" "Uni/Graphics" plain "%?" :target
-      (file+head "Uni/Graphics/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :computer-graphics:\n")
-      :unnarrowed t)
-     ("uq" "Uni/Quantum Computing" plain "%?" :target
-      (file+head "Uni/Quantum Computing/${slug}.org" "#+latex_header: \\usepackage{qcircuit}\n#+latex_header: \\usepackage{braket}\n#+title: ${title}\n#+date: %<%F>\n#+filetags: :quantum-computing:\n")
-      :unnarrowed t)
-     ("ul" "Uni/Deep Learning" plain "%?" :target
-      (file+head "Uni/Deep Learning/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :deep-learning:\n")
-      :unnarrowed t)
-     ("um" "Uni Math")
-     ("umm" "Uni Math General" plain "%?" :target
-      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :math:\n")
-      :unnarrowed t)
-     ("umc" "Uni Math Calculus" plain "%?" :target
-      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :math:calculus:\n")
-      :unnarrowed t)
-     ("ump" "Uni Math Probability" plain "%?" :target
-      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :math:probability:\n")
-      :unnarrowed t)
-     ("uml" "Uni Math Linear Algebra" plain "%?" :target
-      (file+head "Uni/Math/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :math:linear-algebra:\n")
-      :unnarrowed t)
-     ("uu" "Uni General" plain "%?" :target
-      (file+head "Uni/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :chem:\n")
-      :unnarrowed t)
-
-     ("c" "Uni/Chemie" plain "%?" :target
-      (file+head "Uni/Chemie/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+setupfile: setupfile.org\n")
-      :unnarrowed t)
-     ))
+     ("m" "Mesh" plain "%?" :target
+      (file+head "Mesh/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :mesh:\n")
+      :unnarrowed t)))
 
   :bind (("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
@@ -441,15 +396,15 @@
       "C-d"         'mark-word-or-next-word-like-this
       "C-S-d"       'duplicate-line
       "C-S-c C-S-c" 'mc/edit-lines
-      "<f1>"        '+doom-dashboard/open
+      "<f1>"        'org-roam-dailies-goto-today
+      "<f2>"        'buteo3
       "C-r"         'org-roam-node-insert
       "C-o"         'org-roam-node-find
       "C-#"         'comment-line
       "M-SPC"       'change-lang
       "M-d"         'lookup-docs-for-symbol-at-point
       "M-o"         'mc/vertical-align-with-space
-      :leader "e"   'find-build-script-and-compile
-      )
+      :leader "e"   'find-build-script-and-compile)
 
 ;; NOTE(Felix): make C-c f p not throw errors by rebinding it
 (unbind-key "p" doom-leader-file-map)
@@ -829,6 +784,18 @@
   )
 
 (code-region "Org config"
+  (setq org-todo-keyword-faces
+        '(("[-]"     . +org-todo-active)
+          ("STRT"    . +org-todo-active)
+          ("[?]"     . +org-todo-onhold)
+          ("WAIT"    . +org-todo-onhold)
+          ("HOLD"    . +org-todo-onhold)
+          ("PROJ"    . +org-todo-project)
+          ("SKIP"    . +org-todo-cancel)
+          ("RUNNING" . org-scheduled-today)
+          ("BLOCKED" . +org-todo-cancel)
+          ("NO"      . +org-todo-cancel)
+          ("KILL"    . +org-todo-cancel)))
   (use-package citar
     :no-require
     :custom
@@ -914,6 +881,7 @@ in a 'images' folder and insert a link to it in the org buffer."
   ;;   it seems ...
   (require 'org)
   (require 'ox-latex)
+  (use-package! engrave-faces)
   (add-to-list 'org-latex-classes
                '("scrreprt" "\\documentclass{scrreprt}"
                  ("\\chapter{%s}" . "\\chapter*{%s}")
@@ -957,7 +925,7 @@ in a 'images' folder and insert a link to it in the org buffer."
 
         org-latex-caption-above '(table src-block)
         ;; org-latex-listings t
-        org-latex-src-block-backend 'minted
+        org-latex-src-block-backend 'engraved
         org-latex-listings-options '(("captionpos" "t"))
         org-startup-with-inline-images t
         org-startup-with-latex-preview t
@@ -1205,10 +1173,10 @@ This function makes sure that dates are aligned for easy reading."
                ((org-agenda-remove-tags t)
                 (org-agenda-overriding-header "Other todos today:\n")))
               ;; (tags "today"
-               ;;((org-agenda-overriding-header "Lectures still to watch:\n")
-                ;;(org-agenda-files '("~/org/uni.org"))
-                ;;(org-agenda-prefix-format   "  %-2i  %-10(format-lectures) ")
-                ;;(org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline 'timestamp))))
+               ;; ((org-agenda-overriding-header "Lectures still to watch:\n")
+                ;; (org-agenda-files '("~/org/uni.org"))
+                ;; (org-agenda-prefix-format   "  %-2i  %-10(format-lectures) ")
+                ;; (org-agenda-skip-function '(org-agenda-skip-entry-if 'deadline 'timestamp))))
               ;; (tags  "assignments"
               ;;  ((org-agenda-skip-function '(my/org-skip-function 'agenda))
               ;;   (org-agenda-prefix-format   "  %-2i  %-23(format-deadlines) ")
@@ -1617,13 +1585,41 @@ arg is not set, and I don't know how I can make the original
 (setq org-prettify-symbols-alist
       '(("lambda" . 955)))
 
-;; (add-hook 'org-mode-hook (lambda ()
-   ;; "Beautify Org Checkbox Symbol"
-   ;; (setq-local prettify-symbols-alist org-prettify-symbols-alist)
-   ;; (push '("[ ]" . "")  prettify-symbols-alist)
-   ;; (push '("[X]" . "" ) prettify-symbols-alist)
-   ;; (push '("[-]" . "" ) prettify-symbols-alist)
-   ;; (prettify-symbols-mode)
-   ;; ))
+(setq split-width-threshold 180)
 
-;; (add-hook 'emacs-startup-hook (lambda () (doom/reload-font)))
+(code-region "ssh stuff"
+  (when (eq system-type 'windows-nt)
+    (setq tramp-default-method "plink"))
+
+  (defun buteo3 ()
+    (interactive)
+    (dired "/plink:brendelf@buteo3:/"))
+
+  (defun buteo3-bash ()
+    (interactive)
+    (let ((default-directory         "/plink:brendelf@buteo3:/import/mvtec/home/brendelf/")
+          (explicit-shell-file-name  "/bin/bash"))
+        (shell)
+      ))
+
+  (defun my-find-in-project ()
+    (interactive)
+    (if (file-remote-p default-directory)
+        (call-interactively #'projectile-grep)
+      (call-interactively #'+default/search-project)))
+
+  (map! :leader "p s" 'my-find-in-project))
+
+(map! :map occur-mode-map "SPC" #'occur-mode-display-occurrence)
+(map! :map python-mode-map
+      "M-<right>" #'python-indent-shift-right
+      "M-<left>"  #'python-indent-shift-left)
+(map! :map dired-mode-map
+      "e" #'wdired-change-to-wdired-mode)
+
+(defun my-org-roam-find-note ()
+  (interactive)
+  (unless (org-roam-node-read--completions nil nil)
+    (org-roam-db-sync))
+
+  (call-interactively #'org-roam-node-find))

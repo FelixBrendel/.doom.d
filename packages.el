@@ -89,3 +89,7 @@
 
 (package! glsl-mode)
 (package! jupyter)
+
+(package! lsp-python-ms)
+
+(package! engrave-faces)
