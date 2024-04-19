@@ -80,6 +80,61 @@
 (setq dired-omit-files "\\`[.]?#\\|\\`[.][.]?\\'")
 
 (use-package! sqlite)
+(use-package! xenops
+  :hook (latex-mode . xenops-mode)
+        (LaTeX-mode . xenops-mode)
+        (org-mode   . (lambda ()
+                        (xenops-mode)
+                        ;; (xenops-render)
+                        ))
+        (xenops-mode . (lambda () (bind-key "C-y" #'my-org-yank xenops-mode-map)))
+
+  :bind
+  (:map xenops-rendered-element-keymap ("<f2>" . #'xenops-reveal-at-point))
+  :init
+  (require 'xenops)
+  (setq xenops-math-latex-process-alist
+        `((dvisvgm :programs
+                   ("latex" "dvisvgm")
+                   :description "dvi > svg" :message "you need to install the programs: latex and dvisvgm." :image-input-type "dvi" :image-output-type "svg" :image-size-adjust
+                   (1.7 . 1.5)
+                   :latex-compiler
+                   ("latex -interaction nonstopmode -shell-escape -output-format dvi -output-directory %o %f")
+                   :image-converter
+                   ;; NOTE(Feilx): the -b for boundingbox was set weirdly, use -e instead
+                   ("dvisvgm %f -n -c %S -e -o %O"))))
+  (setq xenops-math-image-scale-factor 2.0)
+  (setq xenops-reveal-on-entry nil)
+  (setq xenops-elements
+        `((block-math
+           .  ((:delimiters . (;("\\$\\$" "\\$\\$")
+                               ("^[ \t]*\\\\begin{\\(align\\|equation\\|tikzpicture\\|gather\\)\\*?}"
+                                "^[ \t]*\\\\end{\\(align\\|equation\\|tikzpicture\\|gather\\)\\*?}")
+                               ("^[ \t]*\\\\\\["
+                                "^[ \t]*\\\\\\]")))
+               (:parser . xenops-math-parse-block-element-at-point)
+               (:handlers . (xenops-math-render
+                             xenops-math-regenerate
+                             xenops-math-reveal
+                             xenops-math-image-increase-size
+                             xenops-math-image-decrease-size
+                             xenops-element-copy
+                             xenops-element-delete))))
+          (inline-math
+           . ((:delimiters . (,xenops-math-dollar-delimited-inline-math-delimiters
+                              ,xenops-math-paren-delimited-inline-math-delimiters
+                              ,xenops-math-square-bracket-delimited-inline-math-delimiters
+                              ,xenops-math-tikz-inline-math-delimiters
+                              ,xenops-math-environment-delimited-inline-math-delimiters))
+              (:font-lock-keywords . (((((0 (xenops-math-inline-math-font-lock-handler)))))
+                                      ((((0 (xenops-math-inline-math-font-lock-handler)))))
+                                      ((((0 (xenops-math-inline-math-font-lock-handler)))))
+                                      ((((0 (xenops-math-inline-math-font-lock-handler)))))
+                                      ((((0 (xenops-math-inline-math-font-lock-handler)))))))
+              (:parser . xenops-math-parse-inline-element-at-point)
+              (:handlers . block-math)))))
+  )
+
 (use-package! sly)
 (use-package! rg)
 (use-package! flycheck)
@@ -183,10 +238,10 @@
   (define-key mc/keymap (kbd "<return>") nil)
   (after! multiple-cursors-core
     (setq mc/list-file (concat doom-private-dir "mc-settings.el"))))
-(use-package org-fragtog
-  :custom (org-fragtog-preview-delay 99999999999999999)
-  :bind   (:map org-mode-map ("<f2>" . my-org-f2))
-  :hook   (org-mode . org-fragtog-mode))
+;; (use-package org-fragtog
+;;   :custom (org-fragtog-preview-delay 99999999999999999)
+;;   :bind   (:map org-mode-map ("<f2>" . my-org-f2))
+;;   :hook   (org-mode . org-fragtog-mode))
 
 (use-package! org-roam
   :init
@@ -210,24 +265,87 @@
   ;;                         (setq-local org-bullets-bullet-list '(" ")))))))
   (org-roam-dailies-directory (concat org-directory "dailies/"))
   (org-roam-dailies-capture-templates
-   '(("d" "default" entry "* %<%A %d. %B %Y>\n\n** TODO " :target
+   '(("d" "default" entry "* TODO " :target
       (file+head "%<%Y>/week-%<%W>.org" "#+title: %<%Y Woche %W> \n#+todo: TODO DOING RUNNING | DONE BLOCKED CANCELLED SKIP\n#+startup: show2levels\n\n \12")
       :jump-to-captured t :unnarrowed t)))
   (org-roam-directory         (concat org-directory "vault/"))
   (org-roam-db-location       (concat org-directory "vault/.roam.db"))
   (org-roam-capture-templates
-   '(("d" "General Notes" plain "%?" :target
-      (file+head "Default/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n")
+   '(("w" "Work")
+     ("wd" "General Notes" plain "%?" :target
+      (file+head "Work/Default/${slug}.org" "#+date: %<%F>\n#+title: ${title}\n")
       :unnarrowed t)
-     ("p" "Pose estimation" plain "%?" :target
-      (file+head "Pose/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :pose-estimation:\n")
+     ("wp" "Pose estimation" plain "%?" :target
+      (file+head "Work/Pose/${slug}.org" "#+date: %<%F>\n#+filetags: :pose-estimation:\n#+title: ${title}")
       :unnarrowed t)
-     ("g" "Graphics" plain "%?" :target
-      (file+head "Graphics/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :graphics:\n")
+     ("wg" "Graphics" plain "%?" :target
+      (file+head "Work/Graphics/${slug}.org" "#+date: %<%F>\n#+filetags: :graphics:\n#+title: ${title}")
       :unnarrowed t)
-     ("m" "Mesh" plain "%?" :target
-      (file+head "Mesh/${slug}.org" "#+title: ${title}\n#+date: %<%F>\n#+filetags: :mesh:\n")
-      :unnarrowed t)))
+     ("wm" "Mesh" plain "%?" :target
+      (file+head "Work/Mesh/${slug}.org" "#+date: %<%F>\n#+filetags: :mesh:\n#+title: ${title}")
+      :unnarrowed t)
+
+     ("p" "Private")
+     ("pd" "General Notes" plain "%?" :target
+      (file+head "Private/Default/${slug}.org" "#+date: %<%F>\n#+title: ${title}")
+      :unnarrowed t)
+     ("pu" "Music" plain "%?" :target
+      (file+head "Private/Music/${slug}.org" "#+date: %<%F>\n#+setupfile: setupfile.org\n#+filetags: :music:\n#+title: ${title}")
+      :unnarrowed t)
+     ("pk" "Korean" plain "%?" :target
+      (file+head "Private/Korean/${slug}.org" "#+date: %<%F>\n#+filetags: :korean:#+title: ${title}\n")
+      :unnarrowed t)
+
+     ("pc" "Notes for CompSci / Programming things")
+     ("pcw" "Win32 API" plain "%?" :target
+      (file+head "Private/Programming/win32/${slug}.org" "#+date: %<%F>\n#+filetags: :win32:\n#+title: [win32] ${title}")
+      :unnarrowed t)
+     ("pcv" "Vulkan API" plain "%?" :target
+      (file+head "Private/Programming/vulkan/${slug}.org" "#+date: %<%F>\n#+filetags: :vulkan:\n#+title: [vk] ${title}")
+      :unnarrowed t)
+     ("pcg" "OpenGL" plain "%?" :target
+      (file+head "Private/Programming/opengl/${slug}.org" "#+date: %<%F>\n#+filetags: :opengl:\n#+title: [gl] ${title}")
+      :unnarrowed t)
+     ("pcj" "jai" plain "%?" :target
+      (file+head "Private/Programming/jai/${slug}.org" "#+date: %<%F>\n#+filetags: :jai:\n#+title: [jai] ${title}")
+      :unnarrowed t)
+     ("pcp" "Programming" plain "%?" :target
+      (file+head "Private/Programming/${slug}.org" "#+date: %<%F>\n#+filetags: :programming:\n#+title: ${title}")
+      :unnarrowed t)
+     ("pcc" "Uni/Computer Architecture" plain "%?" :target
+      (file+head "Private/Uni/Computer Architecture/${slug}.org" "#+date: %<%F>\n#+filetags: :computer-architecture:\n#+title: ${title}")
+      :unnarrowed t)
+     ("pcd" "Uni/Databases" plain "%?" :target
+      (file+head "Private/Uni/Databases/${slug}.org" "#+date: %<%F>\n#+filetags: :databases:\n#+title: ${title}")
+      :unnarrowed t)
+     ("pcg" "Uni/Graphics" plain "%?" :target
+      (file+head "Private/Uni/Graphics/${slug}.org" "#+date: %<%F>\n#+filetags: :computer-graphics:\n#+title: ${title}")
+      :unnarrowed t)
+     ("pcq" "Uni/Quantum Computing" plain "%?" :target
+      (file+head "Private/Uni/Quantum Computing/${slug}.org" "#+latex_header: \\usepackage{qcircuit}\n#+latex_header: \\usepackage{braket}\n#+date: %<%F>\n#+filetags: :quantum-computing:\n#+title: ${title}")
+      :unnarrowed t)
+     ("pcl" "Uni/Deep Learning" plain "%?" :target
+      (file+head "Private/Uni/Deep Learning/${slug}.org" "#+date: %<%F>\n#+filetags: :deep-learning:\n#+title: ${title}")
+      :unnarrowed t)
+
+     ("pm" "Uni Math")
+     ("pmm" "Uni Math General" plain "%?" :target
+      (file+head "Private/Uni/Math/${slug}.org" "#+date: %<%F>\n#+filetags: :math:\n#+title: ${title}")
+      :unnarrowed t)
+     ("pmc" "Uni Math Calculus" plain "%?" :target
+      (file+head "Private/Uni/Math/${slug}.org" "#+date: %<%F>\n#+filetags: :math:calculus:\n#+title: ${title}")
+      :unnarrowed t)
+     ("pmp" "Uni Math Probability" plain "%?" :target
+      (file+head "Private/Uni/Math/${slug}.org" "#+date: %<%F>\n#+filetags: :math:probability:\n#+title: ${title}")
+      :unnarrowed t)
+     ("pml" "Uni Math Linear Algebra" plain "%?" :target
+      (file+head "Private/Uni/Math/${slug}.org" "#+date: %<%F>\n#+filetags: :math:linear-algebra:\n#+title: ${title}")
+      :unnarrowed t)
+
+     ("pcc" "Uni/Chemie" plain "%?" :target
+      (file+head "Private/Uni/Chemie/${slug}.org" "#+date: %<%F>\n#+setupfile: setupfile.org\n#+title: ${title}")
+      :unnarrowed t)
+     ))
 
   :bind (("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
@@ -292,6 +410,9 @@
 
 (remove-hook 'doom-first-buffer-hook #'smartparens-global-mode)
 
+(use-package rainbow-mode
+  :hook (prog-mode . rainbow-mode)
+        (org-mode . rainbow-mode))
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
 
@@ -380,7 +501,12 @@
   (cons 'progn body))
 
 
-
+(defun mirror-window ()
+  (interactive)
+  (when (> (length (window-list)) 1)
+      (delete-other-windows))
+  (split-window-right)
+  (other-window 1))
 
 (code-region "Compiling"
     (load-file (concat doom-private-dir "compilation.el")))
@@ -404,6 +530,8 @@
       "M-SPC"       'change-lang
       "M-d"         'lookup-docs-for-symbol-at-point
       "M-o"         'mc/vertical-align-with-space
+      "C-q"         'mirror-window
+      "C-ö"         'other-window
       :leader "e"   'find-build-script-and-compile)
 
 ;; NOTE(Felix): make C-c f p not throw errors by rebinding it
@@ -800,7 +928,7 @@
     :no-require
     :custom
     (org-cite-global-bibliography
-     (list (expand-file-name (concat org-directory "bib.bib"))
+     (list ;; (expand-file-name (concat org-directory "bib.bib"))
            (expand-file-name (concat org-directory "vault.bib"))))
     (org-cite-insert-processor 'citar)
     (org-cite-follow-processor 'citar)
@@ -860,11 +988,13 @@ in a 'images' folder and insert a link to it in the org buffer."
         (delete-region (region-beginning) (region-end)))
     (if (system-clipboard-contains-image-p)
         (org-paste-screenshot-from-clipboard)
-      (call-interactively #'org-yank)))
+      (if (and (boundp 'xenops-mode) xenops-mode)
+          (xenops-handle-paste)
+        (call-interactively #'org-yank))))
 
   (add-hook 'org-mode-hook #'valign-mode)
   (add-hook 'org-mode-hook 'org-bullets-mode)
-  (add-hook 'org-mode-hook 'org-fragtog-mode)
+  ;; (add-hook 'org-mode-hook 'org-fragtog-mode)
   (add-hook 'org-mode-hook (lambda () (setq fill-column 75)))
 
   ;; NOTE(Felix): This is a fix for org mode hanging indefinetly when saving the
@@ -915,7 +1045,7 @@ in a 'images' folder and insert a link to it in the org buffer."
             (lambda ()
               (if (member "music" (org-get-tags))
                   (setq org-preview-latex-default-process 'dvisvgmmusic))))
-  (setq org-export-babel-evaluate nil
+  (setq org-export-babel-evaluate t
         org-fontify-quote-and-verse-blocks t
         org-fontify-whole-heading-line t
         org-hide-emphasis-markers nil
@@ -928,7 +1058,11 @@ in a 'images' folder and insert a link to it in the org buffer."
         org-latex-src-block-backend 'engraved
         org-latex-listings-options '(("captionpos" "t"))
         org-startup-with-inline-images t
-        org-startup-with-latex-preview t
+
+        org-element-use-cache nil
+        org-startup-with-latex-preview nil
+        ;; org-startup-with-latex-preview t
+
         org-startup-indented t
 
         org-preview-latex-process-alist
@@ -994,7 +1128,7 @@ in a 'images' folder and insert a link to it in the org buffer."
         "C-r"  'org-roam-node-insert
         "C-j"  'join-line
         "C-y"  'my-org-yank
-        "M-q"  'my-org-fill-paragraph
+        ;; "M-q"  'my-org-fill-paragraph
         "C-#"  'comment-line)
 
   (code-region "color links"
@@ -1105,7 +1239,8 @@ in a 'images' folder and insert a link to it in the org buffer."
             (holiday-float 11 0 1 "Totensonntag" 20)))
 
 
-
+    (setq org-use-sub-superscripts '{})
+    (setq org-image-max-width 'window)
     (setq org-tags-column -90)
     (setq org-log-done t)
 
@@ -1200,15 +1335,6 @@ This function makes sure that dates are aligned for easy reading."
                                         " . . ." "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"))))))))))
 
 (code-region "Org gardentangle"
-
-
-  ;; (defun my-org-tangle-this-file ()
-    ;; (interactive)
-
-    ;; (let ((this-file (expand-file-name (buffer-file-name))))
-      ;; (my-org-babel-tangle-publish nil this-file
-                                   ;; (expand-file-name "~/org/"))
-      ;; ))
 
   (setq tangle-bib-file (concat org-directory "vault.bib"))
   (defun my-org-babel-tangle-append (&optional arg target-file lang-re)
@@ -1623,3 +1749,34 @@ arg is not set, and I don't know how I can make the original
     (org-roam-db-sync))
 
   (call-interactively #'org-roam-node-find))
+
+
+(defun org-babel-create-footer:python (body params)
+  (s-concat body
+            "\n"
+            (s-join "\n"
+                    (mapcar (lambda (pair)
+                              (format "if \"%s\" in globals(): del(%s)" (car pair) (car pair)))
+                            (org-babel--get-vars params)))))
+
+(defun org-babel-expand-body:jupyter (body params &optional var-lines lang)
+  ;; NOTE(Felix): modification to insert a footer if such a function exists
+  (or lang (setq lang (org-babel-jupyter--src-block-kernel-language)))
+  (let* ((expander (when lang
+                     (intern (format "org-babel-expand-body:%s" lang))))
+         (expanded (if (functionp expander)
+                       (funcall expander body params)
+                     (org-babel-expand-body:generic body params var-lines)))
+         (footer (when lang
+                   (intern (format "org-babel-create-footer:%s" lang))))
+         (expanded-with-footer (if (functionp footer)
+                                   (funcall footer expanded params)))
+         (changelist nil))
+    (when-let* ((dir (alist-get :dir params)))
+      (setq changelist (plist-put changelist :dir (expand-file-name dir))))
+    (if changelist (org-babel-jupyter-transform-code expanded-with-footer changelist)
+      expanded-with-footer)))
+
+
+(setq-default tab-width 4)
+(context-menu-mode)

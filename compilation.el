@@ -164,6 +164,9 @@ source: https://stackoverflow.com/questions/24356401/how-to-append-multiple-elem
 
 (defun find-build-script-and-compile ()
   (interactive)
+  (when (buffer-file-name)
+    (save-buffer))
+
   (let* ((command-script-and-path (get-build-cmd))
          (command (first  command-script-and-path))
          (script  (second command-script-and-path))

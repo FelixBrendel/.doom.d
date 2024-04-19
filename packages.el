@@ -71,8 +71,12 @@
 
 (package! org-roam-timestamps)
 (package! citar-org-roam)
-
 (unpin! org-roam)
+(package! jupyter)
+(package! xenops)
+(package! engrave-faces)
+
+
 (package! websocket)
 
 (package! dap-mode)
@@ -88,8 +92,7 @@
 (package! sly)
 
 (package! glsl-mode)
-(package! jupyter)
 
 (package! lsp-python-ms)
 
-(package! engrave-faces)
+(package! rainbow-mode)

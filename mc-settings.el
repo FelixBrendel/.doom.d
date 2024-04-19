@@ -15,6 +15,7 @@
         c-indent-line-or-region
         doom/backward-to-bol-or-indent
         doom/forward-to-last-non-comment-or-eol
+        drag-stuff-down
         drag-stuff-right
         drag-stuff-up
         forward-sexp
@@ -34,8 +35,10 @@
         org-self-insert-command
         org-shiftleft
         org-shiftright
+        python-indent-shift-right
         scroll-right
         wdired--self-insert
+        xenops-math-insert-closing-paren
         ))
 
 (setq mc/cmds-to-run-once
@@ -50,6 +53,7 @@
         find-build-script-and-compile
         find-file
         indent-for-tab-command
+        kmacro-end-or-call-macro
         lookup-docs-for-symbol-at-point
         mark-word-or-next-word-like-this
         mc--insert-letter-and-increase
